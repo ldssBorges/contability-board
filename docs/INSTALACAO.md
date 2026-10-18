@@ -64,10 +64,8 @@
    - Confira se todos os nós ficaram com as credenciais certas: Postgres, Redis, Evolution, OpenAI e Gemini.
    - **Desative o workflow da v1** e depois **ative o da v2**. Os dois usam o mesmo endereço de webhook, então a Evolution não precisa de nenhuma mudança.
 
-5. **Publique o painel.**
-   - Abra `painel/index.html` num editor de texto.
-   - No começo do script, preencha `const PAINEL_API_URL = '...'` com a URL copiada no passo 3. Se deixar em branco, o painel pede o endereço na tela de login.
-   - Hospede o arquivo em qualquer lugar que sirva páginas estáticas com HTTPS: o nginx da sua VPS, o Netlify (arrastar e soltar) ou similar.
+5. **Publique o painel.** O jeito recomendado é pelo Easypanel com deploy automático: siga a seção "Deploy na VPS (Easypanel)" do `README.md`.
+   - Alternativa sem Docker: abra `painel/index.html` num editor, preencha `const PAINEL_API_URL = '...'` com a URL copiada no passo 3 e hospede o arquivo em qualquer servidor com HTTPS.
 
 6. **Primeiro acesso:** entre com `admin@escritorio.com` e a senha `TroqueEstaSenha123`.
    - **Troque a senha na hora** (menu "Minha senha").

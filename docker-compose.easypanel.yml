@@ -1,0 +1,22 @@
+# Compose para o serviço "Compose" do Easypanel (mesmo padrão do erp-bot).
+# Sem `ports:` e sem `container_name:` de propósito — o Easypanel acusa os dois
+# como conflito num servidor compartilhado. O acesso público é configurado na
+# aba Domains do Easypanel, apontando para o serviço `painel`, porta 80.
+#
+# O banco e o n8n NÃO estão aqui: eles já rodam na VPS. Este compose sobe só o
+# painel, usando a imagem pronta publicada pelo GitHub Actions
+# (.github/workflows/deploy.yml) — a VPS não compila nada.
+services:
+  painel:
+    image: ghcr.io/ldssborges/contability-board-painel:latest
+    pull_policy: always
+    restart: unless-stopped
+    environment:
+      # URL de produção do webhook do workflow "Painel API" no n8n,
+      # ex.: https://n8n.seudominio.com/webhook/painel-api
+      N8N_PAINEL_WEBHOOK_URL: ${N8N_PAINEL_WEBHOOK_URL:?defina N8N_PAINEL_WEBHOOK_URL no Environment do Easypanel}
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3

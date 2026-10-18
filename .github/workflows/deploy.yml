@@ -1,0 +1,178 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Minúsculo de propósito: tags Docker precisam ser minúsculas, mas
+  # github.repository_owner mantém a caixa do usuário (ldssBorges) — mesmo
+  # motivo do erp-bot.
+  PAINEL_IMAGE: ghcr.io/ldssborges/contability-board-painel
+
+jobs:
+  # Sobe um Postgres 16 limpo, cria a estrutura atual do banco (simulada),
+  # roda a migração DUAS vezes (garante que é idempotente) e executa as
+  # verificações da API do painel e da decisão do bot.
+  test-database:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: localhost
+      PGUSER: postgres
+      PGPASSWORD: ci
+      PGDATABASE: ci
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Banco simulado (estrutura da v1)
+        run: psql -v ON_ERROR_STOP=1 -q -f database/teste-banco-simulado.sql
+
+      - name: Migração v2
+        run: psql -v ON_ERROR_STOP=1 -q -f database/01-migracao-v2.sql
+
+      - name: Migração v2 de novo (idempotência)
+        run: psql -v ON_ERROR_STOP=1 -q -f database/01-migracao-v2.sql
+
+      - name: Verificações
+        run: psql -v ON_ERROR_STOP=1 -q -f database/tests/asserts.sql
+
+  # Confere se os workflows do n8n são JSON válidos e se não há nós ligados a
+  # nós que não existem; e se o JavaScript do painel não tem erro de sintaxe.
+  validate-files:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Workflows do n8n
+        run: |
+          node -e '
+            const fs = require("fs");
+            for (const f of fs.readdirSync("n8n").filter(f => f.endsWith(".json"))) {
+              const wf = JSON.parse(fs.readFileSync("n8n/" + f, "utf8"));
+              const nomes = new Set(wf.nodes.map(n => n.name));
+              for (const [origem, saidas] of Object.entries(wf.connections || {})) {
+                if (!nomes.has(origem)) throw new Error(`${f}: conexão saindo de nó inexistente "${origem}"`);
+                for (const tipo of Object.values(saidas)) for (const saida of tipo) for (const c of saida || [])
+                  if (!nomes.has(c.node)) throw new Error(`${f}: "${origem}" aponta para nó inexistente "${c.node}"`);
+              }
+              const refs = [...JSON.stringify(wf).matchAll(/\$\(\x27([^\x27]+)\x27\)/g)].map(m => m[1]);
+              const faltando = [...new Set(refs)].filter(r => !nomes.has(r));
+              if (faltando.length) throw new Error(`${f}: expressões citam nós inexistentes: ${faltando.join(", ")}`);
+              console.log(`${f}: ${wf.nodes.length} nós ok`);
+            }'
+
+      - name: JavaScript do painel
+        run: |
+          node -e '
+            const html = require("fs").readFileSync("painel/index.html", "utf8");
+            const js = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m => m[1]).join("\n");
+            new Function(js);
+            if (!/^const PAINEL_API_URL = \x27\x27;/m.test(html)) throw new Error("linha PAINEL_API_URL mudou: ajuste o sed do painel/Dockerfile");
+            console.log("painel ok");'
+
+  # Builda a imagem do painel aqui no GitHub Actions, testa o container de
+  # verdade e só então publica no GHCR. A VPS só faz `docker pull`.
+  build-and-push-image:
+    needs: [test-database, validate-files]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build da imagem (local, para teste)
+        uses: docker/build-push-action@v6
+        with:
+          context: ./painel
+          load: true
+          tags: painel:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Teste do container
+        run: |
+          docker run -d --name painel -p 8080:80 \
+            -e N8N_PAINEL_WEBHOOK_URL=https://example.com/webhook/painel-api painel:ci
+          for i in $(seq 1 20); do curl -fsS http://localhost:8080/healthz && break; sleep 1; done
+          docker exec painel nginx -t
+          curl -fsS http://localhost:8080/ | grep -q "<title>Painel Marta</title>"
+          curl -fsS http://localhost:8080/ | grep -q "const PAINEL_API_URL = '/api/painel';"
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/api/painel)" = "403"
+          echo "container ok"
+
+      - name: Logs do container (se falhar)
+        if: failure()
+        run: docker logs painel || true
+
+      - name: Log in to GHCR
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publicar imagem no GHCR
+        if: github.event_name != 'pull_request'
+        uses: docker/build-push-action@v6
+        with:
+          context: ./painel
+          push: true
+          tags: |
+            ${{ env.PAINEL_IMAGE }}:latest
+            ${{ env.PAINEL_IMAGE }}:${{ github.sha }}
+          cache-from: type=gha
+
+  # Dispara a Deployment Trigger URL do Easypanel (secret EASYPANEL_DEPLOY_HOOK).
+  # No erp-bot esse passo foi retirado por timeouts ao alcançar a VPS; aqui ele
+  # tenta 5 vezes com espera e, se o secret não existir, só avisa — nesse caso
+  # é clicar em "Implantar" no Easypanel depois que a imagem for publicada.
+  # Como o compose tem um único serviço com pull_policy: always e a imagem muda
+  # a cada commit, o container é sempre recriado (o problema do nginx "velho"
+  # do erp-bot não se aplica).
+  deploy:
+    needs: [build-and-push-image]
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: producao
+    steps:
+      - name: Disparar deploy no Easypanel
+        env:
+          HOOK: ${{ secrets.EASYPANEL_DEPLOY_HOOK }}
+        run: |
+          if [ -z "$HOOK" ]; then
+            echo "::warning::Secret EASYPANEL_DEPLOY_HOOK não configurado. Imagem publicada; clique em Implantar no Easypanel."
+            exit 0
+          fi
+          curl -fsS -X POST --retry 5 --retry-delay 10 --retry-all-errors \
+               --connect-timeout 15 --max-time 60 "$HOOK" -o /dev/null
+          echo "Deploy disparado. Imagem: ${PAINEL_IMAGE}:${GITHUB_SHA}"

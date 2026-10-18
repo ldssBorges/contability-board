@@ -1,0 +1,50 @@
+server {
+    listen 80;
+    server_name _;
+    root /usr/share/nginx/html;
+    index index.html;
+
+    # DNS interno do Docker. Junto com o upstream numa variável (abaixo), faz o
+    # nginx resolver o domínio do n8n a cada requisição em vez de guardar o IP
+    # da hora em que subiu — mesma solução usada no nginx do erp-bot.
+    resolver 127.0.0.11 valid=30s ipv6=off;
+    resolver_timeout 5s;
+
+    add_header X-Content-Type-Options nosniff always;
+    add_header X-Frame-Options SAMEORIGIN always;
+    add_header Referrer-Policy same-origin always;
+
+    # API do painel -> webhook "Painel API" do n8n.
+    # ${N8N_PAINEL_WEBHOOK_URL} é trocado pelo valor real na subida do container.
+    location = /api/painel {
+        limit_except POST { deny all; }
+        client_max_body_size 1m;
+
+        set $n8n_painel "${N8N_PAINEL_WEBHOOK_URL}";
+        proxy_pass $n8n_painel;
+        proxy_ssl_server_name on;
+        proxy_set_header Authorization $http_authorization;
+        proxy_set_header Content-Type $content_type;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_connect_timeout 10s;
+        proxy_read_timeout 30s;
+    }
+
+    # Verificação de saúde (usada no teste do CI e, se quiser, no Easypanel).
+    location = /healthz {
+        access_log off;
+        default_type text/plain;
+        return 200 "ok";
+    }
+
+    location / {
+        # Sempre busca o HTML novo depois de um deploy.
+        add_header Cache-Control "no-cache" always;
+        add_header X-Content-Type-Options nosniff always;
+        add_header X-Frame-Options SAMEORIGIN always;
+        add_header Referrer-Policy same-origin always;
+        try_files $uri /index.html;
+    }
+}
