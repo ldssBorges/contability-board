@@ -1,0 +1,111 @@
+{
+  "name": "Contability-Robot-v2.0.0 - Painel API",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "painel-api",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "5b0e7c2a-1c1f-4b8e-9a51-0c3a2f1d9e01",
+      "name": "Painel - Webhook",
+      "webhookId": "6f2d8a40-3c5e-4b71-8d2a-9e1f0b7c4a55"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT painel.api($1, $2, $3::jsonb) AS resposta",
+        "options": {
+          "queryReplacement": "={{ [ String($json.body.acao || ''), String(($json.headers.authorization || '').replace(/^Bearer\\s+/i, '')), JSON.stringify($json.body.dados || {}) ] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        240,
+        0
+      ],
+      "id": "5b0e7c2a-1c1f-4b8e-9a51-0c3a2f1d9e02",
+      "name": "Painel - Executar ação",
+      "credentials": {
+        "postgres": {
+          "id": "pdv13wnA6kJBnEEy",
+          "name": "Sandro_banco"
+        }
+      },
+      "notes": "Toda a regra de negócio e a checagem de login ficam na função painel.api (arquivo 01-migracao-v2.sql)."
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json.resposta) }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        480,
+        0
+      ],
+      "id": "5b0e7c2a-1c1f-4b8e-9a51-0c3a2f1d9e03",
+      "name": "Painel - Responder"
+    },
+    {
+      "parameters": {
+        "content": "## API do painel do escritório\nO painel envia `POST` com `{ acao, dados }` e o token no cabeçalho `Authorization: Bearer ...`.\nA função `painel.api` valida o login e executa a ação.\n\nURL a configurar no painel: **URL de produção deste webhook**.",
+        "height": 260,
+        "width": 640
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -40,
+        -300
+      ],
+      "id": "5b0e7c2a-1c1f-4b8e-9a51-0c3a2f1d9e04",
+      "name": "Sticky Note"
+    }
+  ],
+  "connections": {
+    "Painel - Webhook": {
+      "main": [
+        [
+          {
+            "node": "Painel - Executar ação",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Painel - Executar ação": {
+      "main": [
+        [
+          {
+            "node": "Painel - Responder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "America/Sao_Paulo",
+    "saveDataSuccessExecution": "none"
+  },
+  "tags": []
+}

@@ -1,0 +1,1283 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Painel Marta</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+body { margin: 0; }
+/* Layout: barra lateral fixa + área de trabalho; no celular a navegação vira uma faixa de abas no topo.
+   Quadro de solicitações em 3 colunas que viram uma pilha abaixo de 900px. */
+:root {
+  --bg: #f2f5f4; --surface: #ffffff; --surface-2: #e8eeec; --line: #d3dedb; --line-strong: #b9c9c5;
+  --fg: #13201e; --muted: #586965; --accent: #0d6a60; --accent-ink: #ffffff; --accent-soft: #d5eae6;
+  --ok: #1d7a3d; --ok-soft: #dbefe1; --warn: #9a5800; --warn-soft: #f7e7cb; --crit: #b3261e; --crit-soft: #fbe0dc;
+  --info: #2b5a9e; --info-soft: #dde6f5; --shadow: 0 1px 2px rgba(19,32,30,.06), 0 4px 14px rgba(19,32,30,.06);
+  --overlay: rgba(10,20,18,.38);
+  --f-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body: "IBM Plex Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --r: 10px;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0e1413; --surface: #151d1c; --surface-2: #1c2725; --line: #283533; --line-strong: #364744;
+  --fg: #e2ebe9; --muted: #92a4a0; --accent: #4db5a8; --accent-ink: #052019; --accent-soft: #163a35;
+  --ok: #5cc27f; --ok-soft: #16311e; --warn: #e2a84d; --warn-soft: #382a11; --crit: #f07a6f; --crit-soft: #3b1916;
+  --info: #84a9e6; --info-soft: #1a2940; --shadow: 0 1px 2px rgba(0,0,0,.3), 0 6px 18px rgba(0,0,0,.25);
+  --overlay: rgba(0,0,0,.55); color-scheme: dark;
+} }
+:root[data-theme="dark"] {
+  --bg: #0e1413; --surface: #151d1c; --surface-2: #1c2725; --line: #283533; --line-strong: #364744;
+  --fg: #e2ebe9; --muted: #92a4a0; --accent: #4db5a8; --accent-ink: #052019; --accent-soft: #163a35;
+  --ok: #5cc27f; --ok-soft: #16311e; --warn: #e2a84d; --warn-soft: #382a11; --crit: #f07a6f; --crit-soft: #3b1916;
+  --info: #84a9e6; --info-soft: #1a2940; --shadow: 0 1px 2px rgba(0,0,0,.3), 0 6px 18px rgba(0,0,0,.25);
+  --overlay: rgba(0,0,0,.55); color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { height: 100%; }
+body { background: var(--bg); color: var(--fg); font: 14px/1.5 var(--f-body); -webkit-font-smoothing: antialiased; }
+h1, h2, h3 { font-family: var(--f-display); font-weight: 650; letter-spacing: -.01em; margin: 0; text-wrap: balance; }
+h1 { font-size: 1.6rem; line-height: 1.15; }
+h2 { font-size: 1.15rem; }
+h3 { font-size: .98rem; }
+p { margin: 0; }
+button, input, select, textarea { font: inherit; color: inherit; }
+a { color: var(--accent); }
+.mono { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+.muted { color: var(--muted); }
+.small { font-size: .8rem; }
+.label { font-size: .7rem; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+
+/* ---------- botões e campos ---------- */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: .4rem; border: 1px solid var(--line-strong);
+  background: var(--surface); padding: .5rem .9rem; border-radius: 8px; cursor: pointer; font-weight: 500; white-space: nowrap; }
+.btn:hover { border-color: var(--accent); }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn.primary:hover { filter: brightness(1.08); }
+.btn.danger { color: var(--crit); border-color: color-mix(in srgb, var(--crit) 45%, var(--line)); }
+.btn.ghost { border-color: transparent; background: transparent; }
+.btn.small { padding: .3rem .6rem; font-size: .82rem; }
+.btn:disabled { opacity: .55; cursor: default; }
+.field { display: grid; gap: .3rem; min-width: 0; }
+.field > span { font-size: .8rem; font-weight: 500; color: var(--muted); }
+.input, select.input, textarea.input { width: 100%; border: 1px solid var(--line-strong); background: var(--surface);
+  border-radius: 8px; padding: .5rem .65rem; min-width: 0; }
+textarea.input { resize: vertical; min-height: 84px; line-height: 1.45; }
+.input:focus { outline: 2px solid color-mix(in srgb, var(--accent) 55%, transparent); outline-offset: 0; border-color: var(--accent); }
+.grid2 { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: .9rem; }
+@media (max-width: 560px) { .grid2 { grid-template-columns: 1fr; } }
+.switch { position: relative; width: 42px; height: 24px; flex: none; }
+.switch input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.switch i { position: absolute; inset: 0; border-radius: 999px; background: var(--line-strong); transition: background .15s; pointer-events: none; }
+.switch i::after { content: ""; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: var(--surface); transition: transform .15s; }
+.switch input:checked + i { background: var(--accent); }
+.switch input:checked + i::after { transform: translateX(18px); }
+.switch input:focus-visible + i { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ---------- etiquetas de estado ---------- */
+.pill { display: inline-flex; align-items: center; gap: .35rem; padding: .12rem .55rem; border-radius: 999px; font-size: .75rem; font-weight: 600; white-space: nowrap; }
+.pill::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.pill.plain::before { display: none; }
+.p-ok { background: var(--ok-soft); color: var(--ok); }
+.p-warn { background: var(--warn-soft); color: var(--warn); }
+.p-crit { background: var(--crit-soft); color: var(--crit); }
+.p-info { background: var(--info-soft); color: var(--info); }
+.p-neutral { background: var(--surface-2); color: var(--muted); }
+.p-accent { background: var(--accent-soft); color: var(--accent); }
+
+/* ---------- login ---------- */
+#login { min-height: 100%; display: grid; place-items: center; padding-block: 32px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.login-card { width: min(420px, 100%); background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 28px; display: grid; gap: 1.1rem; box-shadow: var(--shadow); }
+.brand { display: flex; align-items: center; gap: .65rem; }
+.brand-mark { width: 34px; height: 34px; border-radius: 9px; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; font-family: var(--f-display); font-weight: 700; font-size: 1.05rem; }
+.brand b { font-family: var(--f-display); font-size: 1.05rem; display: block; line-height: 1.1; }
+.login-error { background: var(--crit-soft); color: var(--crit); border-radius: 8px; padding: .55rem .75rem; font-size: .88rem; }
+details.adv summary { cursor: pointer; color: var(--muted); font-size: .85rem; }
+details.adv[open] summary { margin-bottom: .6rem; }
+
+/* ---------- estrutura ---------- */
+#app { display: grid; grid-template-columns: 236px minmax(0,1fr); min-height: 100%; }
+.side { background: var(--surface); border-right: 1px solid var(--line); padding: 20px 14px; display: flex; flex-direction: column; gap: 22px; position: sticky; top: 0; height: 100vh; height: 100dvh; }
+.nav { display: grid; gap: 2px; }
+.nav button { display: flex; align-items: center; justify-content: space-between; gap: .5rem; width: 100%; text-align: left; border: 0; background: transparent; padding: .55rem .7rem; border-radius: 8px; cursor: pointer; color: var(--muted); font-weight: 500; }
+.nav button:hover { background: var(--surface-2); color: var(--fg); }
+.nav button[aria-current="page"] { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.nav .count { font-family: var(--f-mono); font-size: .75rem; background: var(--surface-2); color: var(--fg); border-radius: 999px; padding: 0 .45rem; min-width: 1.6rem; text-align: center; }
+.nav button[aria-current="page"] .count { background: var(--surface); color: var(--accent); }
+.side-foot { margin-top: auto; display: grid; gap: .6rem; font-size: .85rem; }
+.side-foot .who { display: flex; align-items: center; gap: .55rem; min-width: 0; }
+.side-foot .who div { min-width: 0; }
+.side-foot .who b { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.avatar { width: 30px; height: 30px; border-radius: 50%; background: var(--surface-2); color: var(--fg); display: grid; place-items: center; font-weight: 600; font-size: .75rem; flex: none; border: 1px solid var(--line); }
+.avatar.sm { width: 24px; height: 24px; font-size: .66rem; }
+.side-links { display: flex; flex-wrap: wrap; gap: .3rem; }
+main { min-width: 0; padding-block: 22px 48px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 1320px; margin: 0 auto; display: grid; grid-template-columns: minmax(0,1fr); gap: 18px; }
+.wrap > * { min-width: 0; }
+.topbar { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px; }
+.topbar .sub { color: var(--muted); margin-top: .25rem; }
+.status-strip { display: flex; flex-wrap: wrap; gap: .45rem; align-items: center; }
+.demo-banner { background: var(--info-soft); color: var(--info); border-radius: 8px; padding: .5rem .8rem; font-size: .85rem; }
+@media (max-width: 820px) {
+  #app { grid-template-columns: minmax(0,1fr); }
+  .side, main { min-width: 0; }
+  .side { position: sticky; top: env(safe-area-inset-top, 0px); height: auto; z-index: 20; flex-direction: row; align-items: center; gap: 10px; padding: 8px 0; padding-left: max(12px, env(safe-area-inset-left, 0px)); padding-right: max(12px, env(safe-area-inset-right, 0px)); border-right: 0; border-bottom: 1px solid var(--line); }
+  .side .brand b, .side .brand .small { display: none; }
+  .nav { display: flex; overflow-x: auto; gap: 4px; flex: 1; min-width: 0; scrollbar-width: none; }
+  .nav button { width: auto; white-space: nowrap; padding: .45rem .65rem; }
+  .side-foot { margin: 0; display: flex; }
+  .side-foot .who div, .side-foot .side-links { display: none; }
+}
+
+/* ---------- filtros ---------- */
+.filters { display: flex; flex-wrap: wrap; gap: .6rem; align-items: center; }
+.filters .input { width: auto; }
+.filters .search { flex: 1 1 220px; }
+.check { display: inline-flex; align-items: center; gap: .4rem; font-size: .88rem; cursor: pointer; white-space: nowrap; }
+.updated { font-size: .8rem; color: var(--muted); margin-left: auto; }
+
+/* ---------- quadro ---------- */
+.board { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 14px; align-items: start; }
+@media (max-width: 900px) { .board { grid-template-columns: 1fr; } }
+.col { background: var(--surface-2); border-radius: 12px; padding: 10px; display: grid; gap: 8px; min-width: 0; border: 1px solid transparent; }
+.col.drop { border-color: var(--accent); background: var(--accent-soft); }
+.col-head { display: flex; align-items: center; justify-content: space-between; padding: 2px 4px 4px; }
+.col-head h3 { display: flex; gap: .5rem; align-items: center; }
+.col-head .n { font-family: var(--f-mono); font-size: .8rem; color: var(--muted); font-weight: 500; }
+.col-empty { padding: 18px 8px; text-align: center; color: var(--muted); font-size: .85rem; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 11px 12px 10px 14px; display: grid; gap: 7px; cursor: pointer; position: relative; text-align: left; width: 100%; min-width: 0; }
+.card:hover { border-color: var(--line-strong); box-shadow: var(--shadow); }
+.card[draggable="true"] { cursor: grab; }
+.card::before { content: ""; position: absolute; left: 0; top: 10px; bottom: 10px; width: 3px; border-radius: 0 3px 3px 0; background: transparent; }
+.card.pr-alta::before { background: var(--warn); }
+.card.pr-urgente::before { background: var(--crit); }
+.card.novo { animation: novo 2.4s ease-out; }
+@keyframes novo { from { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 45%, transparent); } to { box-shadow: 0 0 0 0 transparent; } }
+.card-top { display: flex; justify-content: space-between; align-items: center; gap: .5rem; }
+.card .proto { font-family: var(--f-mono); font-size: .75rem; color: var(--muted); }
+.card .resumo { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.4; overflow-wrap: anywhere; }
+.card .cond { font-weight: 600; font-size: .86rem; overflow-wrap: anywhere; }
+.card-foot { display: flex; align-items: center; justify-content: space-between; gap: .5rem; font-size: .78rem; color: var(--muted); }
+.card-foot .left { display: flex; align-items: center; gap: .5rem; min-width: 0; flex-wrap: wrap; }
+.card-foot .time.late { color: var(--crit); font-weight: 600; }
+.more { justify-self: center; }
+
+/* ---------- indicadores ---------- */
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; }
+.kpi { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; display: grid; gap: 2px; }
+.kpi .v { font-family: var(--f-display); font-size: 1.9rem; font-weight: 650; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.kpi .v small { font-size: .9rem; font-family: var(--f-body); color: var(--muted); font-weight: 500; margin-left: .2rem; }
+.kpi.alert { border-color: color-mix(in srgb, var(--crit) 40%, var(--line)); }
+.kpi.alert .v { color: var(--crit); }
+.kpi.warnk .v { color: var(--warn); }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; display: grid; gap: 12px; min-width: 0; align-content: start; }
+.panel-head { display: flex; justify-content: space-between; align-items: baseline; gap: .75rem; flex-wrap: wrap; }
+.charts { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 14px; }
+@media (max-width: 900px) { .charts { grid-template-columns: 1fr; } }
+.chart-scroll { overflow-x: auto; }
+.chart text { fill: var(--muted); font-family: var(--f-mono); font-size: 10px; }
+.chart .grid { stroke: var(--line); stroke-width: 1; }
+.chart .bar { fill: var(--accent); }
+.chart .bar.today { fill: color-mix(in srgb, var(--accent) 55%, var(--fg)); }
+.hbars { display: grid; gap: 9px; }
+.hbar { display: grid; grid-template-columns: minmax(0, 11rem) minmax(0,1fr) 2.6rem; gap: .7rem; align-items: center; font-size: .86rem; }
+.hbar .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hbar .track { height: 10px; background: var(--surface-2); border-radius: 999px; overflow: hidden; }
+.hbar .track i { display: block; height: 100%; background: var(--accent); border-radius: 999px; }
+.hbar .num { text-align: right; font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+@media (max-width: 480px) { .hbar { grid-template-columns: minmax(0, 7.5rem) minmax(0,1fr) 2.2rem; } }
+.mini-stats { display: flex; flex-wrap: wrap; gap: 1.6rem; }
+.mini-stats div { display: grid; }
+.mini-stats b { font-family: var(--f-display); font-size: 1.3rem; font-variant-numeric: tabular-nums; }
+
+/* ---------- tabelas ---------- */
+.table-wrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+th { text-align: left; font-size: .7rem; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); font-weight: 600; padding: .7rem .9rem; border-bottom: 1px solid var(--line); white-space: nowrap; }
+td { padding: .7rem .9rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+tr:last-child td { border-bottom: 0; }
+tr.inactive td { color: var(--muted); }
+td.num { font-family: var(--f-mono); font-variant-numeric: tabular-nums; text-align: right; }
+th.num { text-align: right; }
+.cell-main { font-weight: 600; }
+.empty { padding: 34px 18px; text-align: center; color: var(--muted); display: grid; gap: .6rem; justify-items: center; }
+
+/* ---------- atendimento humano ---------- */
+.list { display: grid; gap: 10px; }
+.row-card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 12px; align-items: center; }
+@media (max-width: 600px) { .row-card { grid-template-columns: 1fr; } }
+.row-card .meta { display: flex; flex-wrap: wrap; gap: .4rem 1rem; font-size: .84rem; color: var(--muted); }
+.callout { background: var(--surface); border: 1px dashed var(--line-strong); border-radius: 12px; padding: 14px 16px; display: grid; gap: .5rem; font-size: .9rem; color: var(--muted); max-width: 72ch; }
+
+/* ---------- configurações ---------- */
+.settings { display: grid; gap: 14px; max-width: 880px; }
+.set-row { display: flex; justify-content: space-between; gap: 16px; align-items: center; }
+.set-row p { color: var(--muted); font-size: .86rem; max-width: 60ch; }
+.days { display: flex; flex-wrap: wrap; gap: 6px; }
+.days label { position: relative; }
+.days input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.days span { display: inline-block; padding: .4rem .75rem; border-radius: 8px; border: 1px solid var(--line-strong); font-weight: 500; font-size: .86rem; }
+.days input:checked + span { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.days input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { display: inline-flex; align-items: center; gap: .35rem; background: var(--surface-2); border-radius: 999px; padding: .2rem .3rem .2rem .7rem; font-size: .84rem; }
+.chip button { border: 0; background: transparent; cursor: pointer; color: var(--muted); border-radius: 50%; width: 22px; height: 22px; line-height: 1; }
+.chip button:hover { background: var(--line); color: var(--fg); }
+.inline-add { display: flex; gap: .5rem; flex-wrap: wrap; }
+.inline-add .input { width: auto; flex: 1 1 160px; }
+.bubble { background: var(--ok-soft); border-radius: 10px 10px 10px 2px; padding: .6rem .8rem; font-size: .88rem; max-width: 46ch; white-space: pre-wrap; overflow-wrap: anywhere; }
+.save-bar { position: sticky; bottom: 0; background: var(--bg); padding-block: 12px calc(12px + env(safe-area-inset-bottom, 0px)); display: flex; gap: .6rem; align-items: center; border-top: 1px solid var(--line); }
+
+/* ---------- gaveta e modais ---------- */
+.overlay { position: fixed; inset: 0; background: var(--overlay); z-index: 40; }
+.drawer { position: fixed; top: 0; right: 0; bottom: 0; width: min(580px, 100%); background: var(--surface); z-index: 41; display: flex; flex-direction: column; box-shadow: -10px 0 30px rgba(0,0,0,.15);
+  padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); padding-right: env(safe-area-inset-right, 0px); }
+.drawer-head { padding: 16px 20px 14px; border-bottom: 1px solid var(--line); display: grid; gap: 10px; }
+.drawer-body { padding: 16px 20px 28px; overflow-y: auto; display: grid; gap: 20px; align-content: start; }
+.drawer-title { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.actions { display: flex; flex-wrap: wrap; gap: .45rem; }
+.kv { display: grid; grid-template-columns: 8.5rem minmax(0,1fr); gap: .45rem .9rem; font-size: .9rem; }
+.kv dt { color: var(--muted); }
+.kv dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+@media (max-width: 480px) { .kv { grid-template-columns: 1fr; } .kv dd { margin-bottom: .4rem; } }
+.resumo-box { background: var(--surface-2); border-radius: 10px; padding: 12px 14px; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.5; }
+.notes { display: grid; gap: 10px; }
+.note { border-left: 2px solid var(--accent); padding: 2px 0 2px 12px; display: grid; gap: 2px; }
+.note p { white-space: pre-wrap; overflow-wrap: anywhere; }
+.timeline { display: grid; gap: 6px; font-size: .84rem; color: var(--muted); }
+.timeline div { display: flex; gap: .6rem; }
+.timeline time { font-family: var(--f-mono); font-size: .76rem; flex: none; min-width: 6.5rem; }
+.sec { display: grid; gap: 10px; }
+.modal-box { position: fixed; z-index: 51; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(560px, calc(100% - 32px)); max-height: calc(100% - 48px); overflow-y: auto; background: var(--surface); border-radius: 14px; padding: 22px; display: grid; gap: 16px; box-shadow: 0 20px 60px rgba(0,0,0,.25); }
+.modal-box .foot { display: flex; justify-content: flex-end; gap: .5rem; flex-wrap: wrap; }
+.overlay.top { z-index: 50; }
+.form-error { color: var(--crit); font-size: .86rem; }
+
+/* ---------- avisos ---------- */
+#toasts { position: fixed; z-index: 60; left: 50%; transform: translateX(-50%); bottom: calc(18px + env(safe-area-inset-bottom, 0px)); display: grid; gap: 8px; width: min(440px, calc(100% - 32px)); }
+.toast { background: var(--fg); color: var(--bg); padding: .65rem .9rem; border-radius: 10px; font-size: .9rem; box-shadow: var(--shadow); }
+.toast.err { background: var(--crit); color: #fff; }
+.loading { padding: 40px; text-align: center; color: var(--muted); }
+</style>
+
+</head>
+<body>
+<div id="login" hidden>
+  <form class="login-card" id="login-form" novalidate>
+    <div class="brand"><div class="brand-mark">M</div><div><b>Painel Marta</b><span class="small muted">Atendimento do escritório</span></div></div>
+    <div>
+      <h1>Entrar</h1>
+      <p class="muted" style="margin-top:.3rem">Use o e-mail e a senha cadastrados pelo administrador.</p>
+    </div>
+    <div class="login-error" id="login-error" hidden></div>
+    <label class="field"><span>E-mail</span><input class="input" id="login-email" type="email" autocomplete="username" required></label>
+    <label class="field"><span>Senha</span><input class="input" id="login-senha" type="password" autocomplete="current-password" required></label>
+    <details class="adv" id="adv">
+      <summary>Endereço do servidor</summary>
+      <label class="field"><span>URL de produção do webhook "Painel API" no n8n</span>
+        <input class="input mono" id="login-url" placeholder="https://seu-n8n.com/webhook/painel-api"></label>
+    </details>
+    <button class="btn primary" id="login-btn" type="submit">Entrar</button>
+    <button class="btn ghost" id="demo-btn" type="button">Ver demonstração com dados de exemplo</button>
+  </form>
+</div>
+
+<div id="app" hidden>
+  <aside class="side">
+    <div class="brand"><div class="brand-mark">M</div><div><b>Painel Marta</b><span class="small muted" id="side-sub">Atendimento</span></div></div>
+    <nav class="nav" id="nav"></nav>
+    <div class="side-foot">
+      <div class="who"><div class="avatar" id="me-av"></div><div><b id="me-nome"></b><span class="small muted" id="me-papel"></span></div></div>
+      <div class="side-links">
+        <button class="btn ghost small" id="btn-senha" type="button">Minha senha</button>
+        <button class="btn ghost small" id="btn-sair" type="button">Sair</button>
+      </div>
+    </div>
+  </aside>
+  <main><div class="wrap" id="view"></div></main>
+</div>
+
+<div id="layer"></div>
+<div id="toasts" role="status" aria-live="polite"></div>
+
+<script>
+/* =====================================================================
+   CONFIGURAÇÃO — coloque aqui a URL de produção do webhook "Painel API".
+   Se ficar vazia, o painel pergunta o endereço na tela de login.
+   ===================================================================== */
+const PAINEL_API_URL = '';
+const INICIAR_EM_DEMO = false; // true abre direto na demonstração
+
+/* ---------------------------------------------------------------- utilidades */
+const $ = (s, el = document) => el.querySelector(s);
+const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const store = {
+  get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+  set(k, v) { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch (e) {} }
+};
+const TZ = 'America/Sao_Paulo';
+const fmtData = d => d ? new Intl.DateTimeFormat('pt-BR', { timeZone: TZ, day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(d)) : '—';
+const fmtDataHora = d => d ? new Intl.DateTimeFormat('pt-BR', { timeZone: TZ, day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }).format(new Date(d)) : '—';
+const fmtHora = d => new Intl.DateTimeFormat('pt-BR', { timeZone: TZ, hour: '2-digit', minute: '2-digit' }).format(d);
+function relativo(d) {
+  const min = Math.round((Date.now() - new Date(d)) / 60000);
+  if (min < 1) return 'agora';
+  if (min < 60) return `há ${min} min`;
+  const h = Math.round(min / 60);
+  if (h < 24) return `há ${h} h`;
+  const dias = Math.round(h / 24);
+  return dias === 1 ? 'há 1 dia' : `há ${dias} dias`;
+}
+function restante(d) {
+  const min = Math.max(0, Math.round((new Date(d) - Date.now()) / 60000));
+  if (min < 60) return `${min} min`;
+  const h = Math.floor(min / 60), m = min % 60;
+  return m ? `${h} h ${m} min` : `${h} h`;
+}
+function fmtTel(t) {
+  const d = String(t || '').replace(/\D/g, '');
+  const m = d.match(/^55(\d{2})(\d{4,5})(\d{4})$/);
+  return m ? `(${m[1]}) ${m[2]}-${m[3]}` : (d || '—');
+}
+const iniciais = n => String(n || '').split(/\s+/).filter(p => /^\p{L}/u.test(p)).slice(0, 2).map(p => p[0]).join('').toUpperCase() || '?';
+const protocolo = id => String(id || '').slice(0, 8).toUpperCase();
+const n0 = v => Number(v || 0).toLocaleString('pt-BR');
+
+const TIPOS = {
+  boleto_2via: '2ª via de boleto', autorizacao_mudanca: 'Autorização de mudança', atualizacao_cadastral: 'Atualização cadastral',
+  cnd_nada_consta: 'CND / Nada consta', mudanca_titularidade: 'Mudança de titularidade', consulta_debitos: 'Consulta de débitos',
+  orcamento_proposta: 'Orçamento / Proposta', outros: 'Outros assuntos'
+};
+const STATUS = {
+  OPEN: { nome: 'Aberta', cls: 'p-info' }, IN_PROGRESS: { nome: 'Em andamento', cls: 'p-warn' },
+  COMPLETED: { nome: 'Concluída', cls: 'p-ok' }, CANCELED: { nome: 'Cancelada', cls: 'p-neutral' }
+};
+const PRIORIDADES = { baixa: 'Baixa', normal: 'Normal', alta: 'Alta', urgente: 'Urgente' };
+const DIAS = [[1, 'Seg'], [2, 'Ter'], [3, 'Qua'], [4, 'Qui'], [5, 'Sex'], [6, 'Sáb'], [7, 'Dom']];
+const MOTIVOS = { atendimento_humano: 'Atendente respondeu pelo WhatsApp', pausado_pelo_painel: 'Pausado pelo painel' };
+
+function toast(msg, erro = false) {
+  const el = document.createElement('div');
+  el.className = 'toast' + (erro ? ' err' : '');
+  el.textContent = msg;
+  $('#toasts').appendChild(el);
+  setTimeout(() => el.remove(), erro ? 6000 : 3200);
+}
+
+/* ---------------------------------------------------------------- estado */
+const S = {
+  apiUrl: PAINEL_API_URL || store.get('painel.apiUrl') || '',
+  token: store.get('painel.token'),
+  demo: false, user: null, view: 'solicitacoes',
+  itens: [], idsVistos: new Set(), condos: [], usuarios: [], cfg: null, pausas: [], resumo: null,
+  filtros: { busca: '', condominio: '', responsavel: '', tipo: '', atrasadas: false },
+  periodo: 30, verMaisFechadas: false, atualizadoEm: null, timer: null
+};
+
+/* ---------------------------------------------------------------- comunicação com o n8n */
+async function api(acao, dados = {}) {
+  if (S.demo) return Demo.api(acao, JSON.parse(JSON.stringify(dados)));
+  if (!S.apiUrl) throw new Error('Informe o endereço do servidor em "Endereço do servidor".');
+  let r;
+  try {
+    r = await fetch(S.apiUrl, {
+      method: 'POST',
+      headers: Object.assign({ 'Content-Type': 'application/json' }, S.token ? { Authorization: 'Bearer ' + S.token } : {}),
+      body: JSON.stringify({ acao, dados })
+    });
+  } catch (e) {
+    throw new Error('Não foi possível falar com o servidor. Confira a internet e o endereço do webhook.');
+  }
+  if (!r.ok) throw new Error(`O servidor respondeu com erro ${r.status}. Confira se o workflow "Painel API" está ativo no n8n.`);
+  let j = await r.json();
+  if (typeof j === 'string') j = JSON.parse(j);
+  if (!j || !j.ok) {
+    if (j && j.codigo === 'auth' && acao !== 'login') { sair(true); }
+    throw new Error((j && j.erro) || 'Resposta inesperada do servidor.');
+  }
+  return j.dados;
+}
+
+/* ---------------------------------------------------------------- login */
+function mostrarLogin(msg) {
+  $('#app').hidden = true; $('#login').hidden = false;
+  $('#login-url').value = S.apiUrl;
+  if (!PAINEL_API_URL && !S.apiUrl) $('#adv').open = true;
+  if (PAINEL_API_URL) $('#adv').hidden = true;
+  const e = $('#login-error'); e.hidden = !msg; e.textContent = msg || '';
+  setTimeout(() => $('#login-email').focus(), 0);
+}
+$('#login-form').addEventListener('submit', async ev => {
+  ev.preventDefault();
+  const btn = $('#login-btn'); btn.disabled = true; btn.textContent = 'Entrando…';
+  S.demo = false;
+  if (!PAINEL_API_URL) { S.apiUrl = $('#login-url').value.trim(); store.set('painel.apiUrl', S.apiUrl || null); }
+  try {
+    const r = await api('login', { email: $('#login-email').value, senha: $('#login-senha').value });
+    S.token = r.token; S.user = r.usuario; store.set('painel.token', r.token);
+    $('#login-senha').value = '';
+    iniciarApp();
+  } catch (e) {
+    mostrarLogin(e.message);
+  } finally { btn.disabled = false; btn.textContent = 'Entrar'; }
+});
+$('#demo-btn').addEventListener('click', async () => {
+  S.demo = true;
+  const r = await api('login', {});
+  S.token = r.token; S.user = r.usuario;
+  iniciarApp();
+});
+function sair(expirou) {
+  if (!S.demo && S.token && !expirou) api('logout').catch(() => {});
+  clearInterval(S.timer);
+  S.token = null; S.user = null; S.demo = false; store.set('painel.token', null);
+  fecharCamada();
+  mostrarLogin(expirou ? 'Sua sessão expirou. Entre novamente.' : '');
+}
+$('#btn-sair').addEventListener('click', () => sair(false));
+$('#btn-senha').addEventListener('click', abrirSenha);
+
+/* ---------------------------------------------------------------- estrutura */
+const VIEWS = [
+  { id: 'solicitacoes', nome: 'Solicitações' },
+  { id: 'indicadores', nome: 'Indicadores' },
+  { id: 'condominios', nome: 'Condomínios' },
+  { id: 'humano', nome: 'Atendimento humano' },
+  { id: 'config', nome: 'Configurações' },
+  { id: 'usuarios', nome: 'Usuários', admin: true }
+];
+function iniciarApp() {
+  $('#login').hidden = true; $('#app').hidden = false;
+  $('#me-nome').textContent = S.user.nome;
+  $('#me-papel').textContent = S.user.papel === 'admin' ? 'Administrador' : 'Atendente';
+  $('#me-av').textContent = iniciais(S.user.nome);
+  $('#side-sub').textContent = S.demo ? 'Demonstração' : 'Atendimento';
+  let v = (location.hash || '').replace('#', '');
+  const permitida = VIEWS.find(x => x.id === v);
+  if (!permitida || (permitida.admin && S.user.papel !== 'admin')) v = 'solicitacoes';
+  S.view = v;
+  carregarBase().then(() => irPara(S.view));
+  clearInterval(S.timer);
+  S.timer = setInterval(atualizarAuto, 60000);
+}
+async function carregarBase() {
+  try {
+    const [us, cs, ps, cfg] = await Promise.all([
+      api('usuarios_resumo'), api('condominios_listar'), api('pausas_listar'), api('config_obter')
+    ]);
+    S.usuarios = us.itens; S.condos = cs.itens; S.pausas = ps.itens; S.cfg = cfg;
+  } catch (e) { toast(e.message, true); }
+}
+function renderNav() {
+  const abertas = S.itens.filter(i => i.status === 'OPEN').length;
+  const counts = { solicitacoes: S.itens.length ? abertas : null, humano: S.pausas.length || null };
+  $('#nav').innerHTML = VIEWS.filter(v => !v.admin || S.user.papel === 'admin').map(v =>
+    `<button type="button" data-view="${v.id}" ${S.view === v.id ? 'aria-current="page"' : ''}>
+       <span>${v.nome}</span>${counts[v.id] != null ? `<span class="count">${counts[v.id]}</span>` : ''}</button>`).join('');
+  $$('#nav button').forEach(b => b.addEventListener('click', () => irPara(b.dataset.view)));
+  document.title = abertas ? `(${abertas}) Painel Marta` : 'Painel Marta';
+}
+function irPara(view) {
+  S.view = view;
+  try { history.replaceState(null, '', '#' + view); } catch (e) {}
+  renderNav();
+  $('#view').innerHTML = '<div class="loading">Carregando…</div>';
+  ({ solicitacoes: viewSolicitacoes, indicadores: viewIndicadores, condominios: viewCondominios,
+     humano: viewHumano, config: viewConfig, usuarios: viewUsuarios }[view] || viewSolicitacoes)();
+}
+function statusStrip() {
+  const c = S.cfg || {};
+  const aberto = c.expediente_aberto_agora;
+  const botOn = c.bot_ativo !== false;
+  return `<div class="status-strip">
+    <span class="pill ${botOn ? 'p-ok' : 'p-crit'}">Marta ${botOn ? 'ligada' : 'desligada'}</span>
+    <span class="pill ${aberto ? 'p-ok' : 'p-neutral'}">${aberto ? 'Dentro do expediente' : 'Fora do expediente'}</span>
+    ${S.pausas.length ? `<span class="pill p-warn">${S.pausas.length} em atendimento humano</span>` : ''}
+  </div>`;
+}
+function cabecalho(titulo, sub, extra = '') {
+  return `${S.demo ? '<div class="demo-banner">Modo demonstração: os dados são de exemplo e nada é gravado no seu banco.</div>' : ''}
+  <div class="topbar"><div><h1>${titulo}</h1>${sub ? `<p class="sub">${sub}</p>` : ''}</div>${extra || statusStrip()}</div>`;
+}
+async function atualizarAuto() {
+  if (document.hidden || !S.user) return;
+  try {
+    const [ls, ps] = await Promise.all([api('solicitacoes_listar'), api('pausas_listar')]);
+    const novos = ls.itens.filter(i => !S.idsVistos.has(i.id));
+    S.itens = ls.itens; S.pausas = ps.itens; S.atualizadoEm = new Date();
+    ls.itens.forEach(i => S.idsVistos.add(i.id));
+    if (novos.length) toast(novos.length === 1 ? 'Chegou 1 solicitação nova.' : `Chegaram ${novos.length} solicitações novas.`);
+    renderNav();
+    if (S.view === 'solicitacoes' && !$('#layer').children.length) renderQuadro(novos.map(n => n.id));
+    if (S.view === 'humano') renderPausas();
+  } catch (e) { /* silencioso: a próxima tentativa acontece em 1 minuto */ }
+}
+
+/* ---------------------------------------------------------------- solicitações */
+async function viewSolicitacoes() {
+  try {
+    const r = await api('solicitacoes_listar');
+    S.itens = r.itens; S.atualizadoEm = new Date();
+    S.itens.forEach(i => S.idsVistos.add(i.id));
+  } catch (e) { toast(e.message, true); }
+  if (S.view !== 'solicitacoes') return;
+  renderNav();
+  const f = S.filtros;
+  $('#view').innerHTML = `${cabecalho('Solicitações', 'Pedidos registrados pela Marta no WhatsApp. Arraste um cartão para mudar a situação ou abra para ver detalhes.')}
+    <div class="filters">
+      <input class="input search" id="f-busca" type="search" placeholder="Buscar por cliente, telefone, protocolo ou assunto" value="${esc(f.busca)}">
+      <select class="input" id="f-cond"><option value="">Todos os condomínios</option>
+        ${S.condos.map(c => `<option value="${c.id}" ${f.condominio === c.id ? 'selected' : ''}>${esc(c.nome)}</option>`).join('')}
+        <option value="nenhum" ${f.condominio === 'nenhum' ? 'selected' : ''}>Condomínio não identificado</option></select>
+      <select class="input" id="f-tipo"><option value="">Todos os tipos</option>
+        ${Object.entries(TIPOS).map(([k, v]) => `<option value="${k}" ${f.tipo === k ? 'selected' : ''}>${v}</option>`).join('')}</select>
+      <select class="input" id="f-resp">
+        <option value="">Todos os responsáveis</option><option value="eu" ${f.responsavel === 'eu' ? 'selected' : ''}>Comigo</option>
+        <option value="nenhum" ${f.responsavel === 'nenhum' ? 'selected' : ''}>Sem responsável</option>
+        ${S.usuarios.map(u => `<option value="${u.id}" ${f.responsavel === u.id ? 'selected' : ''}>${esc(u.nome)}</option>`).join('')}</select>
+      <label class="check"><input type="checkbox" id="f-atr" ${f.atrasadas ? 'checked' : ''}> Só atrasadas</label>
+      <span class="updated" id="updated"></span>
+    </div>
+    <div class="board" id="board"></div>`;
+  $('#f-busca').addEventListener('input', e => { f.busca = e.target.value; renderQuadro(); });
+  $('#f-cond').addEventListener('change', e => { f.condominio = e.target.value; renderQuadro(); });
+  $('#f-tipo').addEventListener('change', e => { f.tipo = e.target.value; renderQuadro(); });
+  $('#f-resp').addEventListener('change', e => { f.responsavel = e.target.value; renderQuadro(); });
+  $('#f-atr').addEventListener('change', e => { f.atrasadas = e.target.checked; renderQuadro(); });
+  renderQuadro();
+}
+function filtrar(itens) {
+  const f = S.filtros, q = f.busca.trim().toLowerCase(), qd = q.replace(/\D/g, '');
+  return itens.filter(i => {
+    if (f.condominio === 'nenhum' ? i.condominio_id : (f.condominio && i.condominio_id !== f.condominio)) return false;
+    if (f.tipo && i.tipo !== f.tipo) return false;
+    if (f.responsavel === 'eu' && i.responsavel?.id !== S.user.id) return false;
+    if (f.responsavel === 'nenhum' && i.responsavel) return false;
+    if (f.responsavel && !['eu', 'nenhum'].includes(f.responsavel) && i.responsavel?.id !== f.responsavel) return false;
+    if (f.atrasadas && !i.atrasada) return false;
+    if (q) {
+      const alvo = [i.cliente, i.condominio, i.resumo, protocolo(i.id), TIPOS[i.tipo]].join(' ').toLowerCase();
+      const telOk = qd.length >= 4 && String(i.telefone || '').includes(qd);
+      if (!alvo.includes(q) && !telOk) return false;
+    }
+    return true;
+  });
+}
+const ORD_PRI = { urgente: 0, alta: 1, normal: 2, baixa: 3 };
+function renderQuadro(destacar = []) {
+  const board = $('#board'); if (!board) return;
+  const itens = filtrar(S.itens);
+  const ativos = (st) => itens.filter(i => i.status === st)
+    .sort((a, b) => (ORD_PRI[a.prioridade] - ORD_PRI[b.prioridade]) || (new Date(a.criado_em) - new Date(b.criado_em)));
+  const fechadas = itens.filter(i => i.status === 'COMPLETED' || i.status === 'CANCELED')
+    .sort((a, b) => new Date(b.concluido_em || b.atualizado_em) - new Date(a.concluido_em || a.atualizado_em));
+  const LIM = 20;
+  const cols = [
+    { st: 'OPEN', titulo: 'Abertas', itens: ativos('OPEN'), vazio: 'Nenhuma solicitação esperando a equipe.' },
+    { st: 'IN_PROGRESS', titulo: 'Em andamento', itens: ativos('IN_PROGRESS'), vazio: 'Arraste para cá o que alguém já está resolvendo.' },
+    { st: 'COMPLETED', titulo: 'Encerradas', sub: 'últimos 30 dias', itens: fechadas, vazio: 'Nada encerrado nos últimos 30 dias.' }
+  ];
+  board.innerHTML = cols.map(c => {
+    const mostrar = c.st === 'COMPLETED' && !S.verMaisFechadas ? c.itens.slice(0, LIM) : c.itens;
+    return `<section class="col" data-status="${c.st}" aria-label="${c.titulo}">
+      <div class="col-head"><h3>${c.titulo} <span class="n">${c.itens.length}</span></h3>${c.sub ? `<span class="small muted">${c.sub}</span>` : ''}</div>
+      ${mostrar.length ? mostrar.map(i => cartao(i, destacar.includes(i.id))).join('') : `<div class="col-empty">${c.vazio}</div>`}
+      ${mostrar.length < c.itens.length ? `<button class="btn small more" type="button" id="ver-mais">Mostrar mais ${c.itens.length - mostrar.length}</button>` : ''}
+    </section>`;
+  }).join('');
+  $$('.card', board).forEach(el => {
+    el.addEventListener('click', () => abrirDetalhe(el.dataset.id));
+    el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); abrirDetalhe(el.dataset.id); } });
+    el.addEventListener('dragstart', e => { e.dataTransfer.setData('text/plain', el.dataset.id); e.dataTransfer.effectAllowed = 'move'; });
+  });
+  $$('.col', board).forEach(col => {
+    col.addEventListener('dragover', e => { e.preventDefault(); col.classList.add('drop'); });
+    col.addEventListener('dragleave', () => col.classList.remove('drop'));
+    col.addEventListener('drop', e => {
+      e.preventDefault(); col.classList.remove('drop');
+      const id = e.dataTransfer.getData('text/plain'), item = S.itens.find(i => i.id === id);
+      if (!item) return;
+      const destino = col.dataset.status;
+      const fechada = item.status === 'COMPLETED' || item.status === 'CANCELED';
+      if (destino === item.status || (destino === 'COMPLETED' && fechada)) return;
+      mudarStatus(id, destino);
+    });
+  });
+  const vm = $('#ver-mais'); if (vm) vm.addEventListener('click', () => { S.verMaisFechadas = true; renderQuadro(); });
+  const up = $('#updated'); if (up && S.atualizadoEm) up.textContent = `Atualizado às ${fmtHora(S.atualizadoEm)} · a cada minuto`;
+}
+function cartao(i, novo) {
+  const ativo = i.status === 'OPEN' || i.status === 'IN_PROGRESS';
+  const st = STATUS[i.status];
+  return `<div role="button" tabindex="0" class="card pr-${esc(i.prioridade)} ${novo ? 'novo' : ''}" data-id="${i.id}" draggable="true">
+    <div class="card-top"><span class="proto">#${protocolo(i.id)}</span>
+      ${ativo ? (i.prioridade === 'urgente' || i.prioridade === 'alta' ? `<span class="pill ${i.prioridade === 'urgente' ? 'p-crit' : 'p-warn'} plain">${PRIORIDADES[i.prioridade]}</span>` : `<span class="pill p-accent plain">${esc(TIPOS[i.tipo] || i.tipo)}</span>`)
+              : `<span class="pill ${st.cls}">${st.nome}</span>`}</div>
+    <div class="cond">${esc(i.condominio || 'Condomínio não identificado')}</div>
+    <div class="resumo">${esc(i.resumo || 'Sem resumo')}</div>
+    <div class="card-foot">
+      <span class="left">
+        ${i.responsavel ? `<span class="avatar sm" title="${esc(i.responsavel.nome)}">${iniciais(i.responsavel.nome)}</span>` : ''}
+        <span>${esc(i.cliente || fmtTel(i.telefone))}</span>
+        ${i.total_notas ? `<span title="Anotações internas">· ${i.total_notas} nota${i.total_notas > 1 ? 's' : ''}</span>` : ''}
+        ${i.bot_pausado ? '<span title="A Marta está pausada para este contato">· humano</span>' : ''}
+      </span>
+      <span class="time ${i.atrasada ? 'late' : ''}" title="${fmtDataHora(i.criado_em)}">${ativo ? (i.atrasada ? 'Atrasada · ' : '') + relativo(i.criado_em) : fmtData(i.concluido_em)}</span>
+    </div>
+  </div>`;
+}
+async function mudarStatus(id, status) {
+  try {
+    const d = await api('solicitacao_atualizar', { id, status });
+    atualizarItem(d);
+    toast(`Protocolo #${protocolo(id)}: ${STATUS[status].nome.toLowerCase()}.`);
+    return d;
+  } catch (e) { toast(e.message, true); }
+}
+function atualizarItem(d) {
+  const ix = S.itens.findIndex(i => i.id === d.id);
+  const base = Object.fromEntries(Object.entries(d).filter(([k]) => !['notas', 'historico', 'outras'].includes(k)));
+  base.total_notas = (d.notas || []).length;
+  if (ix >= 0) S.itens[ix] = base; else S.itens.unshift(base);
+  renderNav();
+  if (S.view === 'solicitacoes') renderQuadro();
+}
+
+/* ---------------------------------------------------------------- camada (gaveta/modais) */
+function fecharCamada() { $('#layer').innerHTML = ''; document.removeEventListener('keydown', escFecha); }
+function escFecha(e) { if (e.key === 'Escape') fecharCamada(); }
+function abrirCamada(html, tipo = 'drawer') {
+  $('#layer').innerHTML = tipo === 'drawer'
+    ? `<div class="overlay" data-close></div><aside class="drawer" role="dialog" aria-modal="true">${html}</aside>`
+    : `<div class="overlay top" data-close></div><div class="modal-box" role="dialog" aria-modal="true">${html}</div>`;
+  $$('#layer [data-close]').forEach(el => el.addEventListener('click', fecharCamada));
+  document.addEventListener('keydown', escFecha);
+}
+function confirmar(titulo, texto, botao, perigo = true) {
+  return new Promise(res => {
+    const box = document.createElement('div');
+    box.innerHTML = `<div class="overlay top" style="z-index:55"></div>
+      <div class="modal-box" style="z-index:56" role="alertdialog" aria-modal="true">
+        <h2>${titulo}</h2><p class="muted">${texto}</p>
+        <div class="foot"><button class="btn" type="button" data-r="0">Voltar</button>
+        <button class="btn ${perigo ? 'danger' : 'primary'}" type="button" data-r="1">${botao}</button></div></div>`;
+    document.body.appendChild(box);
+    $$('[data-r]', box).forEach(b => b.addEventListener('click', () => { box.remove(); res(b.dataset.r === '1'); }));
+    $('.overlay', box).addEventListener('click', () => { box.remove(); res(false); });
+    $('[data-r="1"]', box).focus();
+  });
+}
+
+/* ---------------------------------------------------------------- detalhe da solicitação */
+async function abrirDetalhe(id) {
+  abrirCamada('<div class="loading">Carregando…</div>');
+  try { renderDetalhe(await api('solicitacao_detalhe', { id })); }
+  catch (e) { fecharCamada(); toast(e.message, true); }
+}
+function renderDetalhe(d) {
+  const st = STATUS[d.status];
+  const tel = String(d.telefone || '').replace(/\D/g, '');
+  const ativo = d.status === 'OPEN' || d.status === 'IN_PROGRESS';
+  const botoes = [];
+  if (d.status === 'OPEN') botoes.push(`<button class="btn primary" type="button" data-st="IN_PROGRESS">Assumir atendimento</button>`);
+  if (ativo) botoes.push(`<button class="btn ${d.status === 'IN_PROGRESS' ? 'primary' : ''}" type="button" data-st="COMPLETED">Concluir</button>`,
+                         `<button class="btn danger" type="button" data-st="CANCELED">Cancelar</button>`);
+  if (!ativo) botoes.push(`<button class="btn" type="button" data-st="OPEN">Reabrir</button>`);
+  const html = `
+    <div class="drawer-head">
+      <div class="drawer-title">
+        <div style="display:grid;gap:.3rem;min-width:0">
+          <span class="label mono">Protocolo #${protocolo(d.id)}</span>
+          <h2>${esc(TIPOS[d.tipo] || d.tipo)}</h2>
+          <div class="status-strip"><span class="pill ${st.cls}">${st.nome}</span>
+            ${d.atrasada ? '<span class="pill p-crit">Fora do prazo</span>' : ''}
+            ${d.bot_pausado ? '<span class="pill p-warn">Marta pausada para este contato</span>' : ''}</div>
+        </div>
+        <button class="btn ghost" type="button" data-close aria-label="Fechar">✕</button>
+      </div>
+      <div class="actions">${botoes.join('')}</div>
+    </div>
+    <div class="drawer-body">
+      <div class="grid2">
+        <label class="field"><span>Responsável</span>
+          <select class="input" id="d-resp"><option value="">Sem responsável</option>
+            ${S.usuarios.map(u => `<option value="${u.id}" ${d.responsavel?.id === u.id ? 'selected' : ''}>${esc(u.nome)}</option>`).join('')}</select></label>
+        <label class="field"><span>Prioridade</span>
+          <select class="input" id="d-pri">${Object.entries(PRIORIDADES).map(([k, v]) => `<option value="${k}" ${d.prioridade === k ? 'selected' : ''}>${v}</option>`).join('')}</select></label>
+      </div>
+      <section class="sec"><span class="label">Pedido registrado pela Marta</span><div class="resumo-box">${esc(d.resumo || 'Sem resumo')}</div></section>
+      <dl class="kv">
+        <dt>Cliente</dt><dd>${esc(d.cliente || '—')}</dd>
+        <dt>WhatsApp</dt><dd><span class="mono">${fmtTel(d.telefone)}</span>
+          ${tel ? ` · <a href="https://wa.me/${tel}" target="_blank" rel="noopener">abrir conversa</a> · <button class="btn ghost small" type="button" id="d-copy">copiar</button>` : ''}</dd>
+        <dt>Condomínio</dt><dd>${esc(d.condominio || 'Não identificado')}</dd>
+        <dt>Aberta em</dt><dd>${fmtDataHora(d.criado_em)} <span class="muted">(${relativo(d.criado_em)})</span></dd>
+        ${d.concluido_em ? `<dt>Encerrada em</dt><dd>${fmtDataHora(d.concluido_em)}</dd>` : ''}
+      </dl>
+      ${tel ? `<div class="set-row" style="background:var(--surface-2);border-radius:10px;padding:10px 12px">
+        <p style="color:var(--fg)">${d.bot_pausado ? 'A Marta não está respondendo este contato.' : 'A Marta responde este contato normalmente.'}</p>
+        <button class="btn small" type="button" id="d-pausa">${d.bot_pausado ? 'Devolver para a Marta' : 'Pausar a Marta'}</button></div>` : ''}
+      <section class="sec">
+        <span class="label">Anotações internas</span>
+        ${d.notas.length ? `<div class="notes">${d.notas.map(n => `<div class="note"><span class="small muted">${esc(n.autor)} · ${fmtDataHora(n.criado_em)}</span><p>${esc(n.texto)}</p></div>`).join('')}</div>`
+                         : '<p class="muted small">Ninguém anotou nada ainda. As anotações não são enviadas ao cliente.</p>'}
+        <textarea class="input" id="d-nota" placeholder="Ex.: Liguei para o morador, boleto enviado por e-mail."></textarea>
+        <div><button class="btn" type="button" id="d-nota-btn">Adicionar anotação</button></div>
+      </section>
+      ${d.outras.length ? `<section class="sec"><span class="label">Outras solicitações deste cliente</span>
+        <div class="list">${d.outras.map(o => `<button class="card" type="button" data-outra="${o.id}"><div class="card-top"><span class="proto">#${protocolo(o.id)}</span><span class="pill ${STATUS[o.status].cls}">${STATUS[o.status].nome}</span></div><div class="resumo">${esc(o.resumo)}</div><div class="card-foot"><span>${fmtData(o.criado_em)}</span></div></button>`).join('')}</div></section>` : ''}
+      <section class="sec"><span class="label">Histórico</span>
+        <div class="timeline">
+          <div><time>${fmtDataHora(d.criado_em)}</time><span>Registrada pela Marta no WhatsApp</span></div>
+          ${d.historico.map(h => `<div><time>${fmtDataHora(h.criado_em)}</time><span>${esc(h.autor)}: ${esc(descHist(h))}</span></div>`).join('')}
+        </div></section>
+    </div>`;
+  abrirCamada(html);
+  $$('[data-st]').forEach(b => b.addEventListener('click', async () => {
+    const st2 = b.dataset.st;
+    if (st2 === 'CANCELED' && !await confirmar('Cancelar esta solicitação?', 'Ela sai do quadro de trabalho e fica em "Encerradas". Você pode reabrir depois.', 'Cancelar solicitação')) return;
+    const nd = await mudarStatus(d.id, st2);
+    if (nd) renderDetalhe(nd);
+  }));
+  $('#d-resp').addEventListener('change', e => salvarCampo(d.id, { responsavel_id: e.target.value }, 'Responsável atualizado.'));
+  $('#d-pri').addEventListener('change', e => salvarCampo(d.id, { prioridade: e.target.value }, 'Prioridade atualizada.'));
+  $('#d-nota-btn').addEventListener('click', async () => {
+    const t = $('#d-nota').value.trim();
+    if (!t) { $('#d-nota').focus(); return; }
+    try { const nd = await api('nota_adicionar', { id: d.id, texto: t }); atualizarItem(nd); renderDetalhe(nd); toast('Anotação salva.'); }
+    catch (e) { toast(e.message, true); }
+  });
+  const cp = $('#d-copy');
+  if (cp) cp.addEventListener('click', () => {
+    navigator.clipboard.writeText(tel).then(() => toast('Número copiado.')).catch(() => toast('Não foi possível copiar. Selecione o número e copie manualmente.', true));
+  });
+  const pz = $('#d-pausa');
+  if (pz) pz.addEventListener('click', async () => {
+    try {
+      if (d.bot_pausado) { await api('pausa_retomar', { telefone: tel }); toast('A Marta voltou a responder este contato.'); }
+      else { await api('pausa_criar', { telefone: tel }); toast(`A Marta ficará pausada por ${S.cfg?.pausa_humano_horas ?? 24} h para este contato.`); }
+      S.pausas = (await api('pausas_listar')).itens;
+      const nd = await api('solicitacao_detalhe', { id: d.id }); atualizarItem(nd); renderDetalhe(nd);
+    } catch (e) { toast(e.message, true); }
+  });
+  $$('[data-outra]').forEach(b => b.addEventListener('click', () => abrirDetalhe(b.dataset.outra)));
+}
+function descHist(h) {
+  if (h.acao === 'status') return 'mudou a situação (' + h.detalhe.replace(/OPEN|IN_PROGRESS|COMPLETED|CANCELED/g, m => STATUS[m].nome) + ')';
+  if (h.acao === 'responsavel') return 'definiu responsável: ' + h.detalhe;
+  if (h.acao === 'prioridade') return 'definiu prioridade ' + (PRIORIDADES[h.detalhe] || h.detalhe).toLowerCase();
+  return h.acao + (h.detalhe ? ': ' + h.detalhe : '');
+}
+async function salvarCampo(id, dados, msg) {
+  try { const nd = await api('solicitacao_atualizar', Object.assign({ id }, dados)); atualizarItem(nd); renderDetalhe(nd); toast(msg); }
+  catch (e) { toast(e.message, true); }
+}
+
+/* ---------------------------------------------------------------- indicadores */
+async function viewIndicadores() {
+  let r;
+  try { r = await api('resumo', { dias: S.periodo }); S.resumo = r; } catch (e) { toast(e.message, true); return; }
+  if (S.view !== 'indicadores') return;
+  const per = `<label class="field" style="min-width:10rem"><span>Período</span><select class="input" id="per">
+      ${[[7, 'Últimos 7 dias'], [30, 'Últimos 30 dias'], [90, 'Últimos 90 dias']].map(([v, t]) => `<option value="${v}" ${S.periodo === v ? 'selected' : ''}>${t}</option>`).join('')}</select></label>`;
+  const maxTipo = Math.max(1, ...r.por_tipo.map(x => x.total));
+  const maxCond = Math.max(1, ...r.por_condominio.map(x => x.total));
+  $('#view').innerHTML = `${cabecalho('Indicadores', `Prazo de atendimento configurado: ${r.sla_horas} horas a partir da abertura.`, per)}
+    <div class="kpis">
+      <div class="kpi"><span class="label">Abertas</span><span class="v">${n0(r.abertas)}</span><span class="small muted">esperando a equipe</span></div>
+      <div class="kpi"><span class="label">Em andamento</span><span class="v">${n0(r.em_andamento)}</span><span class="small muted">com alguém da equipe</span></div>
+      <div class="kpi ${r.atrasadas ? 'alert' : ''}"><span class="label">Fora do prazo</span><span class="v">${n0(r.atrasadas)}</span><span class="small muted">abertas há mais de ${r.sla_horas} h</span></div>
+      <div class="kpi ${r.sem_responsavel ? 'warnk' : ''}"><span class="label">Sem responsável</span><span class="v">${n0(r.sem_responsavel)}</span><span class="small muted">ninguém assumiu</span></div>
+      <div class="kpi"><span class="label">Concluídas</span><span class="v">${n0(r.concluidas_periodo)}</span><span class="small muted">no período</span></div>
+      <div class="kpi"><span class="label">Tempo até concluir</span><span class="v">${r.tempo_medio_horas == null ? '—' : String(r.tempo_medio_horas).replace('.', ',')}<small>${r.tempo_medio_horas == null ? '' : 'h'}</small></span><span class="small muted">média no período</span></div>
+    </div>
+    <section class="panel">
+      <div class="panel-head"><h2>Solicitações recebidas por dia</h2><span class="small muted">${n0(r.recebidas_periodo)} no período · ${n0(r.novas_hoje)} hoje</span></div>
+      <div class="chart-scroll" id="chart-dias"></div>
+    </section>
+    <div class="charts">
+      <section class="panel"><h2>Por tipo de serviço</h2>
+        ${r.por_tipo.length ? `<div class="hbars">${r.por_tipo.map(x => `<div class="hbar"><span class="name" title="${esc(TIPOS[x.tipo] || x.tipo)}">${esc(TIPOS[x.tipo] || x.tipo)}</span><span class="track"><i style="width:${(x.total / maxTipo * 100).toFixed(1)}%"></i></span><span class="num">${x.total}</span></div>`).join('')}</div>` : '<p class="muted">Sem solicitações no período.</p>'}
+      </section>
+      <section class="panel"><h2>Condomínios com mais pedidos</h2>
+        ${r.por_condominio.length ? `<div class="hbars">${r.por_condominio.map(x => `<div class="hbar"><span class="name" title="${esc(x.condominio)}">${esc(x.condominio)}</span><span class="track"><i style="width:${(x.total / maxCond * 100).toFixed(1)}%"></i></span><span class="num">${x.total}</span></div>`).join('')}</div>` : '<p class="muted">Sem solicitações no período.</p>'}
+      </section>
+    </div>
+    <section class="panel"><h2>WhatsApp</h2>
+      <div class="mini-stats">
+        <div><span class="label">Mensagens recebidas</span><b>${n0(r.mensagens_recebidas)}</b></div>
+        <div><span class="label">Conversas iniciadas com a Marta</span><b>${n0(r.atendimentos_bot)}</b></div>
+        <div><span class="label">Em atendimento humano agora</span><b>${n0(r.pausas_ativas)}</b></div>
+      </div>
+    </section>`;
+  const cd = $('#chart-dias'); cd.innerHTML = graficoDias(r.por_dia, cd.clientWidth);
+  $('#per').addEventListener('change', e => { S.periodo = Number(e.target.value); viewIndicadores(); });
+}
+function graficoDias(dias, largura) {
+  const W = Math.max(Math.round(largura || 640), dias.length * 16), H = 220, pl = 34, pr = 10, pt = 12, pb = 28;
+  const max = Math.max(...dias.map(d => d.total), 1);
+  const passo = max <= 5 ? 1 : max <= 12 ? 2 : max <= 30 ? 5 : Math.ceil(max / 5 / 5) * 5;
+  const topo = Math.ceil(max / passo) * passo;
+  const y = v => pt + (H - pt - pb) * (1 - v / topo);
+  const bw = (W - pl - pr) / dias.length;
+  const cada = Math.max(1, Math.ceil(dias.length / Math.max(3, Math.floor((W - pl) / 64))));
+  const hoje = dias.length - 1;
+  let s = `<svg class="chart" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Solicitações por dia">`;
+  for (let v = 0; v <= topo; v += passo) s += `<line class="grid" x1="${pl}" x2="${W - pr}" y1="${y(v)}" y2="${y(v)}"/><text x="${pl - 6}" y="${y(v) + 3}" text-anchor="end">${v}</text>`;
+  dias.forEach((d, i) => {
+    const w = Math.min(bw * 0.64, 28), x = pl + i * bw + (bw - w) / 2, h = y(0) - y(d.total);
+    if (d.total) s += `<rect class="bar ${i === hoje ? 'today' : ''}" x="${x.toFixed(1)}" y="${y(d.total).toFixed(1)}" width="${w.toFixed(1)}" height="${Math.max(h, 1).toFixed(1)}" rx="2"><title>${d.dia.split('-').reverse().join('/')}: ${d.total}</title></rect>`;
+    if ((hoje - i) % cada === 0) s += `<text x="${(pl + i * bw + bw / 2).toFixed(1)}" y="${H - 9}" text-anchor="middle">${d.dia.slice(8, 10)}/${d.dia.slice(5, 7)}</text>`;
+  });
+  return s + '</svg>';
+}
+
+/* ---------------------------------------------------------------- condomínios */
+async function viewCondominios() {
+  try { S.condos = (await api('condominios_listar')).itens; } catch (e) { toast(e.message, true); }
+  if (S.view !== 'condominios') return;
+  $('#view').innerHTML = `${cabecalho('Condomínios', 'A Marta só reconhece os condomínios ativos desta lista ao registrar um pedido.',
+      '<button class="btn primary" type="button" id="novo-cond">Cadastrar condomínio</button>')}
+    <div class="filters"><input class="input search" id="c-busca" type="search" placeholder="Buscar por nome, cidade, síndico ou CNPJ"></div>
+    <div id="c-tab"></div>`;
+  $('#novo-cond').addEventListener('click', () => formCondominio());
+  $('#c-busca').addEventListener('input', renderCondos);
+  renderCondos();
+}
+function renderCondos() {
+  const q = ($('#c-busca')?.value || '').trim().toLowerCase();
+  const lista = S.condos.filter(c => !q || [c.nome, c.cidade, c.sindico_nome, c.cnpj, c.endereco].join(' ').toLowerCase().includes(q));
+  $('#c-tab').innerHTML = !S.condos.length
+    ? `<div class="empty table-wrap"><b>Nenhum condomínio cadastrado</b><span>Cadastre os condomínios atendidos para a Marta conseguir identificar cada pedido.</span></div>`
+    : `<div class="table-wrap"><table>
+      <thead><tr><th>Condomínio</th><th>Síndico</th><th>Cidade</th><th class="num">Em aberto</th><th class="num">Total</th><th>Situação</th><th></th></tr></thead>
+      <tbody>${lista.map(c => `<tr class="${c.ativo ? '' : 'inactive'}">
+        <td><div class="cell-main">${esc(c.nome)}</div><div class="small muted">${esc(c.endereco || '')}${c.cnpj ? ` · CNPJ <span class="mono">${esc(c.cnpj)}</span>` : ''}</div></td>
+        <td>${esc(c.sindico_nome || '—')}${c.sindico_telefone ? `<div class="small muted mono">${fmtTel(c.sindico_telefone)}</div>` : ''}</td>
+        <td>${esc(c.cidade || '—')}</td>
+        <td class="num">${c.abertas}</td><td class="num">${c.total}</td>
+        <td><span class="pill ${c.ativo ? 'p-ok' : 'p-neutral'}">${c.ativo ? 'Ativo' : 'Inativo'}</span></td>
+        <td><button class="btn small" type="button" data-edit="${c.id}">Editar</button></td></tr>`).join('')}
+      ${lista.length ? '' : '<tr><td colspan="7" class="muted">Nenhum condomínio encontrado para essa busca.</td></tr>'}</tbody></table></div>`;
+  $$('[data-edit]').forEach(b => b.addEventListener('click', () => formCondominio(S.condos.find(c => c.id === b.dataset.edit))));
+}
+function formCondominio(c = {}) {
+  const novo = !c.id;
+  abrirCamada(`<form id="fc" novalidate style="display:grid;gap:16px">
+      <h2>${novo ? 'Cadastrar condomínio' : 'Editar condomínio'}</h2>
+      <label class="field"><span>Nome do condomínio *</span><input class="input" id="fc-nome" value="${esc(c.nome)}" required></label>
+      <div class="grid2">
+        <label class="field"><span>Cidade</span><input class="input" id="fc-cidade" value="${esc(c.cidade)}"></label>
+        <label class="field"><span>CNPJ</span><input class="input mono" id="fc-cnpj" value="${esc(c.cnpj)}" placeholder="00.000.000/0000-00"></label>
+      </div>
+      <label class="field"><span>Endereço</span><input class="input" id="fc-end" value="${esc(c.endereco)}"></label>
+      <div class="grid2">
+        <label class="field"><span>Síndico(a)</span><input class="input" id="fc-sind" value="${esc(c.sindico_nome)}"></label>
+        <label class="field"><span>Telefone do síndico</span><input class="input mono" id="fc-tel" value="${esc(c.sindico_telefone ? fmtTel(c.sindico_telefone) : '')}" placeholder="(17) 99999-9999"></label>
+      </div>
+      <label class="field"><span>Observações para a equipe</span><textarea class="input" id="fc-obs">${esc(c.observacoes)}</textarea></label>
+      <div class="set-row"><div><b>Condomínio ativo</b><p>Inativos ficam no histórico, mas a Marta deixa de oferecê-los.</p></div>
+        <label class="switch"><input type="checkbox" id="fc-ativo" ${c.ativo === false ? '' : 'checked'} aria-label="Condomínio ativo"><i></i></label></div>
+      <p class="form-error" id="fc-err" hidden></p>
+      <div class="foot"><button class="btn" type="button" data-close>Cancelar</button><button class="btn primary" type="submit">${novo ? 'Cadastrar' : 'Salvar alterações'}</button></div>
+    </form>`, 'modal');
+  $('#fc-nome').focus();
+  $('#fc').addEventListener('submit', async ev => {
+    ev.preventDefault();
+    const tel = $('#fc-tel').value.replace(/\D/g, '');
+    const dados = { id: c.id || '', nome: $('#fc-nome').value, cidade: $('#fc-cidade').value, cnpj: $('#fc-cnpj').value,
+      endereco: $('#fc-end').value, sindico_nome: $('#fc-sind').value,
+      sindico_telefone: tel && tel.length <= 11 ? '55' + tel : tel, observacoes: $('#fc-obs').value, ativo: $('#fc-ativo').checked };
+    try {
+      await api('condominio_salvar', dados);
+      fecharCamada(); toast(novo ? 'Condomínio cadastrado. A Marta já pode reconhecê-lo.' : 'Condomínio atualizado.');
+      viewCondominios();
+    } catch (e) { const er = $('#fc-err'); er.hidden = false; er.textContent = e.message; }
+  });
+}
+
+/* ---------------------------------------------------------------- atendimento humano */
+async function viewHumano() {
+  try { S.pausas = (await api('pausas_listar')).itens; } catch (e) { toast(e.message, true); }
+  if (S.view !== 'humano') return;
+  renderNav();
+  $('#view').innerHTML = `${cabecalho('Atendimento humano', 'Contatos em que a Marta está em silêncio porque alguém da equipe assumiu a conversa.')}
+    <div class="callout"><b style="color:var(--fg)">Como funciona</b>
+      <span>Quando alguém do escritório responde um cliente pelo celular do WhatsApp, a Marta sai da conversa por ${S.cfg?.pausa_humano_horas ?? 24} horas. Ao terminar o atendimento, devolva o contato para ela aqui.</span></div>
+    <div class="list" id="p-lista"></div>
+    <section class="panel"><h2>Pausar a Marta para um número</h2>
+      <form class="inline-add" id="p-form" novalidate>
+        <input class="input mono" id="p-tel" placeholder="(17) 99999-9999" aria-label="Telefone">
+        <select class="input" id="p-horas" style="flex:0 1 12rem" aria-label="Por quanto tempo">
+          <option value="1">Por 1 hora</option><option value="4">Por 4 horas</option><option value="24" selected>Por 24 horas</option><option value="72">Por 3 dias</option><option value="720">Por 30 dias</option></select>
+        <button class="btn" type="submit">Pausar</button>
+      </form></section>`;
+  $('#p-form').addEventListener('submit', async ev => {
+    ev.preventDefault();
+    let tel = $('#p-tel').value.replace(/\D/g, '');
+    if (tel.length < 10) { toast('Digite o telefone com DDD.', true); return; }
+    if (tel.length <= 11) tel = '55' + tel;
+    try { await api('pausa_criar', { telefone: tel, horas: Number($('#p-horas').value) }); $('#p-tel').value = ''; toast('Marta pausada para esse número.'); viewHumano(); }
+    catch (e) { toast(e.message, true); }
+  });
+  renderPausas();
+}
+function renderPausas() {
+  const el = $('#p-lista'); if (!el) return;
+  el.innerHTML = S.pausas.length ? S.pausas.map(p => `<div class="row-card">
+      <div style="display:grid;gap:4px;min-width:0">
+        <div><b>${esc(p.cliente || 'Contato sem cadastro')}</b> <span class="mono muted">${fmtTel(p.telefone)}</span></div>
+        <div class="meta"><span>${esc(MOTIVOS[p.motivo] || p.motivo)}${p.por ? ' por ' + esc(p.por) : ''}</span><span>desde ${fmtDataHora(p.desde)}</span><span>volta sozinha em ${restante(p.pausado_ate)}</span></div>
+        ${p.ultima_solicitacao ? `<div class="small" style="overflow-wrap:anywhere">Último pedido: ${esc(p.ultima_solicitacao)}</div>` : ''}
+      </div>
+      <div class="actions"><a class="btn small" href="https://wa.me/${esc(p.telefone)}" target="_blank" rel="noopener">Abrir conversa</a>
+        <button class="btn primary small" type="button" data-volta="${esc(p.telefone)}">Devolver para a Marta</button></div>
+    </div>`).join('')
+    : `<div class="empty table-wrap"><b>A Marta está atendendo todos os contatos</b><span>Ninguém da equipe assumiu uma conversa nas últimas horas.</span></div>`;
+  $$('[data-volta]').forEach(b => b.addEventListener('click', async () => {
+    try { await api('pausa_retomar', { telefone: b.dataset.volta }); toast('A Marta voltou a responder esse contato.'); viewHumano(); }
+    catch (e) { toast(e.message, true); }
+  }));
+}
+
+/* ---------------------------------------------------------------- configurações */
+async function viewConfig() {
+  try { S.cfg = await api('config_obter'); } catch (e) { toast(e.message, true); return; }
+  if (S.view !== 'config') return;
+  const c = S.cfg, adm = S.user.papel === 'admin', dis = adm ? '' : 'disabled';
+  const e = c.expediente || { dias: [1, 2, 3, 4, 5], inicio: '09:00', fim: '17:00' };
+  let feriados = [...(c.feriados || [])].sort();
+  let gestores = [...(c.numeros_gestor || [])];
+  $('#view').innerHTML = `${cabecalho('Configurações', adm ? 'As mudanças valem para a próxima mensagem que chegar no WhatsApp.' : 'Somente administradores podem alterar estas configurações.')}
+    <form class="settings" id="cfg" novalidate>
+      <section class="panel"><div class="set-row"><div><h2>Marta ligada</h2><p>Desligada, a Marta não responde ninguém e a equipe atende tudo manualmente pelo WhatsApp.</p></div>
+        <label class="switch"><input type="checkbox" id="c-bot" ${c.bot_ativo !== false ? 'checked' : ''} ${dis} aria-label="Marta ligada"><i></i></label></div></section>
+
+      <section class="panel"><div class="panel-head"><h2>Horário de atendimento</h2>
+          <span class="pill ${c.expediente_aberto_agora ? 'p-ok' : 'p-neutral'}">Agora: ${c.expediente_aberto_agora ? 'dentro do expediente' : 'fora do expediente'}</span></div>
+        <div class="field"><span>Dias de atendimento</span><div class="days">${DIAS.map(([n, t]) => `<label><input type="checkbox" value="${n}" ${e.dias.includes(n) ? 'checked' : ''} ${dis} aria-label="${t}"><span>${t}</span></label>`).join('')}</div></div>
+        <div class="grid2" style="max-width:420px">
+          <label class="field"><span>Início</span><input class="input mono" type="time" id="c-ini" value="${esc(e.inicio)}" ${dis}></label>
+          <label class="field"><span>Término</span><input class="input mono" type="time" id="c-fim" value="${esc(e.fim)}" ${dis}></label>
+        </div>
+        <div class="field"><span>Feriados e dias sem expediente</span><div class="chips" id="c-fer"></div>
+          ${adm ? `<div class="inline-add"><input class="input mono" type="date" id="c-fer-d" aria-label="Data do feriado"><button class="btn" type="button" id="c-fer-add">Adicionar data</button></div>` : ''}</div>
+        <label class="field"><span>Mensagem enviada fora do horário</span><textarea class="input" id="c-msg" ${dis}>${esc(c.mensagem_fora_horario)}</textarea></label>
+        <div class="field"><span>Como o cliente vê</span><div class="bubble" id="c-prev">${esc(c.mensagem_fora_horario)}</div></div>
+        <label class="field" style="max-width:340px"><span>Repetir o aviso para o mesmo contato depois de (horas)</span><input class="input mono" type="number" min="1" max="72" id="c-int" value="${esc(c.aviso_intervalo_horas ?? 4)}" ${dis}></label>
+      </section>
+
+      <section class="panel"><h2>Atendimento</h2>
+        <div class="grid2">
+          <label class="field"><span>Prazo para atender uma solicitação (horas)</span><input class="input mono" type="number" min="1" max="720" id="c-sla" value="${esc(c.sla_horas ?? 8)}" ${dis}></label>
+          <label class="field"><span>Pausa da Marta quando a equipe responde (horas)</span><input class="input mono" type="number" min="1" max="720" id="c-pausa" value="${esc(c.pausa_humano_horas ?? 24)}" ${dis}></label>
+        </div>
+        <label class="field"><span>Resposta para áudio, foto ou documento</span><textarea class="input" id="c-midia" ${dis}>${esc(c.mensagem_midia)}</textarea></label>
+      </section>
+
+      <section class="panel"><h2>Números do gestor</h2>
+        <p class="muted small">Mensagens destes números vão para a assistente do gestor (relatórios e lembretes), em vez do atendimento de clientes.</p>
+        <div class="chips" id="c-gest"></div>
+        ${adm ? `<div class="inline-add"><input class="input mono" id="c-gest-n" placeholder="(17) 99999-9999" aria-label="Número do gestor"><button class="btn" type="button" id="c-gest-add">Adicionar número</button></div>` : ''}
+      </section>
+      ${adm ? `<div class="save-bar"><button class="btn primary" type="submit">Salvar configurações</button><span class="small muted" id="c-dirty"></span></div>` : ''}
+    </form>`;
+  const chipsFer = () => {
+    $('#c-fer').innerHTML = feriados.length ? feriados.map(d => `<span class="chip mono">${d.split('-').reverse().join('/')}${adm ? `<button type="button" data-fer="${d}" aria-label="Remover ${d}">✕</button>` : ''}</span>`).join('') : '<span class="small muted">Nenhum feriado cadastrado.</span>';
+    $$('[data-fer]').forEach(b => b.addEventListener('click', () => { feriados = feriados.filter(x => x !== b.dataset.fer); chipsFer(); sujo(); }));
+  };
+  const chipsGest = () => {
+    $('#c-gest').innerHTML = gestores.length ? gestores.map(g => `<span class="chip mono">${fmtTel(g)}${adm ? `<button type="button" data-g="${esc(g)}" aria-label="Remover número">✕</button>` : ''}</span>`).join('') : '<span class="small muted">Nenhum número cadastrado.</span>';
+    $$('[data-g]').forEach(b => b.addEventListener('click', () => { gestores = gestores.filter(x => x !== b.dataset.g); chipsGest(); sujo(); }));
+  };
+  const sujo = () => { const d = $('#c-dirty'); if (d) d.textContent = 'Há alterações não salvas.'; };
+  chipsFer(); chipsGest();
+  $('#c-msg').addEventListener('input', ev => { $('#c-prev').textContent = ev.target.value; });
+  if (!adm) return;
+  $('#cfg').addEventListener('input', sujo);
+  $('#c-fer-add').addEventListener('click', () => {
+    const v = $('#c-fer-d').value; if (!v) return;
+    if (!feriados.includes(v)) feriados.push(v); feriados.sort(); $('#c-fer-d').value = ''; chipsFer(); sujo();
+  });
+  $('#c-gest-add').addEventListener('click', () => {
+    let v = $('#c-gest-n').value.replace(/\D/g, ''); if (v.length < 10) { toast('Digite o número com DDD.', true); return; }
+    if (v.length <= 11) v = '55' + v;
+    if (!gestores.includes(v)) gestores.push(v); $('#c-gest-n').value = ''; chipsGest(); sujo();
+  });
+  $('#cfg').addEventListener('submit', async ev => {
+    ev.preventDefault();
+    const dias = $$('.days input:checked').map(i => Number(i.value));
+    if (!dias.length) { toast('Escolha pelo menos um dia de atendimento.', true); return; }
+    const num = (id, def) => Math.max(1, Number($(id).value) || def);
+    const dados = {
+      bot_ativo: $('#c-bot').checked,
+      expediente: { dias, inicio: $('#c-ini').value, fim: $('#c-fim').value, fuso: e.fuso || 'America/Sao_Paulo' },
+      feriados, numeros_gestor: gestores,
+      mensagem_fora_horario: $('#c-msg').value.trim(), mensagem_midia: $('#c-midia').value.trim(),
+      aviso_intervalo_horas: num('#c-int', 4), sla_horas: num('#c-sla', 8), pausa_humano_horas: num('#c-pausa', 24)
+    };
+    if (!dados.mensagem_fora_horario) { toast('Escreva a mensagem de fora do horário.', true); return; }
+    try { S.cfg = await api('config_salvar', dados); toast('Configurações salvas.'); viewConfig(); }
+    catch (er) { toast(er.message, true); }
+  });
+}
+
+/* ---------------------------------------------------------------- usuários */
+async function viewUsuarios() {
+  let lista = [];
+  try { lista = (await api('usuarios_listar')).itens; } catch (e) { toast(e.message, true); return; }
+  if (S.view !== 'usuarios') return;
+  $('#view').innerHTML = `${cabecalho('Usuários', 'Quem pode entrar no painel. Atendentes trabalham as solicitações; administradores também mudam configurações e usuários.',
+      '<button class="btn primary" type="button" id="novo-u">Adicionar usuário</button>')}
+    <div class="table-wrap"><table><thead><tr><th>Nome</th><th>E-mail</th><th>Papel</th><th>Último acesso</th><th>Situação</th><th></th></tr></thead>
+      <tbody>${lista.map(u => `<tr class="${u.ativo ? '' : 'inactive'}"><td class="cell-main">${esc(u.nome)}</td><td>${esc(u.email)}</td>
+        <td>${u.papel === 'admin' ? 'Administrador' : 'Atendente'}</td><td class="mono small">${u.ultimo_acesso ? fmtDataHora(u.ultimo_acesso) : '—'}</td>
+        <td><span class="pill ${u.ativo ? 'p-ok' : 'p-neutral'}">${u.ativo ? 'Ativo' : 'Bloqueado'}</span></td>
+        <td><button class="btn small" type="button" data-u="${u.id}">Editar</button></td></tr>`).join('')}</tbody></table></div>`;
+  $('#novo-u').addEventListener('click', () => formUsuario());
+  $$('[data-u]').forEach(b => b.addEventListener('click', () => formUsuario(lista.find(u => u.id === b.dataset.u))));
+}
+function formUsuario(u = {}) {
+  const novo = !u.id;
+  abrirCamada(`<form id="fu" novalidate style="display:grid;gap:16px">
+      <h2>${novo ? 'Adicionar usuário' : 'Editar usuário'}</h2>
+      <label class="field"><span>Nome</span><input class="input" id="fu-nome" value="${esc(u.nome)}"></label>
+      <label class="field"><span>E-mail de acesso</span><input class="input" type="email" id="fu-email" value="${esc(u.email)}"></label>
+      <div class="grid2">
+        <label class="field"><span>Papel</span><select class="input" id="fu-papel">
+          <option value="atendente" ${u.papel !== 'admin' ? 'selected' : ''}>Atendente</option><option value="admin" ${u.papel === 'admin' ? 'selected' : ''}>Administrador</option></select></label>
+        <label class="field"><span>${novo ? 'Senha inicial' : 'Nova senha (opcional)'}</span><input class="input" type="password" id="fu-senha" autocomplete="new-password" placeholder="Mínimo de 8 caracteres"></label>
+      </div>
+      ${novo ? '' : `<div class="set-row"><div><b>Acesso liberado</b><p>Bloqueado, o usuário sai do painel na hora e não consegue entrar.</p></div>
+        <label class="switch"><input type="checkbox" id="fu-ativo" ${u.ativo ? 'checked' : ''} aria-label="Acesso liberado"><i></i></label></div>`}
+      <p class="form-error" id="fu-err" hidden></p>
+      <div class="foot"><button class="btn" type="button" data-close>Cancelar</button><button class="btn primary" type="submit">${novo ? 'Adicionar' : 'Salvar'}</button></div>
+    </form>`, 'modal');
+  $('#fu-nome').focus();
+  $('#fu').addEventListener('submit', async ev => {
+    ev.preventDefault();
+    try {
+      await api('usuario_salvar', { id: u.id || '', nome: $('#fu-nome').value, email: $('#fu-email').value, papel: $('#fu-papel').value,
+        senha: $('#fu-senha').value, ativo: novo ? true : $('#fu-ativo').checked });
+      fecharCamada(); toast(novo ? 'Usuário adicionado. Passe o e-mail e a senha inicial para a pessoa.' : 'Usuário atualizado.');
+      S.usuarios = (await api('usuarios_resumo')).itens;
+      viewUsuarios();
+    } catch (e) { const er = $('#fu-err'); er.hidden = false; er.textContent = e.message; }
+  });
+}
+function abrirSenha() {
+  abrirCamada(`<form id="fs" novalidate style="display:grid;gap:16px"><h2>Minha senha</h2>
+      <label class="field"><span>Senha atual</span><input class="input" type="password" id="fs-a" autocomplete="current-password"></label>
+      <label class="field"><span>Nova senha</span><input class="input" type="password" id="fs-n" autocomplete="new-password" placeholder="Mínimo de 8 caracteres"></label>
+      <p class="form-error" id="fs-err" hidden></p>
+      <div class="foot"><button class="btn" type="button" data-close>Cancelar</button><button class="btn primary" type="submit">Trocar senha</button></div></form>`, 'modal');
+  $('#fs-a').focus();
+  $('#fs').addEventListener('submit', async ev => {
+    ev.preventDefault();
+    try { await api('senha_alterar', { atual: $('#fs-a').value, nova: $('#fs-n').value }); fecharCamada(); toast('Senha alterada. Outros aparelhos conectados foram desconectados.'); }
+    catch (e) { const er = $('#fs-err'); er.hidden = false; er.textContent = e.message; }
+  });
+}
+
+/* =====================================================================
+   MODO DEMONSTRAÇÃO — dados de exemplo em memória, nada é enviado ao servidor
+   ===================================================================== */
+const Demo = (() => {
+  const H = 3600e3, agora = Date.now();
+  let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  const uid = () => 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => { const r = rnd() * 16 | 0; return (c === 'x' ? r : (r & 3 | 8)).toString(16); });
+  const iso = ms => new Date(ms).toISOString();
+  const usuarios = [
+    { id: uid(), nome: 'Você (demonstração)', email: 'voce@escritorio.com', papel: 'admin', ativo: true, ultimo_acesso: iso(agora) },
+    { id: uid(), nome: 'Ana Ribeiro', email: 'ana@escritorio.com', papel: 'atendente', ativo: true, ultimo_acesso: iso(agora - 2 * H) },
+    { id: uid(), nome: 'Lucas Ferreira', email: 'lucas@escritorio.com', papel: 'atendente', ativo: true, ultimo_acesso: iso(agora - 26 * H) }
+  ];
+  const condos = [
+    ['Residencial Jardim das Flores', 'Rua das Hortênsias, 410 — Jardim Redentor', 'Helena Costa', '5517991230011'],
+    ['Edifício Solar Rio Preto', 'Av. Alberto Andaló, 2890 — Centro', 'Paulo Nogueira', '5517988120344'],
+    ['Condomínio Vila Nova', 'Rua Bady Bassitt, 1550 — Vila Nova', 'Sérgio Araújo', '5517997761200'],
+    ['Residencial Ipê Amarelo', 'Rua Ipiranga, 98 — Jardim Seyon', 'Marlene Duarte', '5517992004455'],
+    ['Edifício Boulevard Redentora', 'Av. Bady Bassitt, 4100 — Redentora', 'Ricardo Lemos', '5517996543210'],
+    ['Condomínio Parque das Águas', 'Estrada Municipal, km 4 — Distrito Industrial', 'Tânia Moura', '5517991117788']
+  ].map(([nome, endereco, sindico_nome, sindico_telefone], i) => ({
+    id: uid(), nome, endereco, cidade: 'São José do Rio Preto', cnpj: `${10 + i}.${345 + i * 7}.678/0001-${String(10 + i * 9).padStart(2, '0')}`,
+    sindico_nome, sindico_telefone, observacoes: i === 1 ? 'Mudanças só com 48 h de antecedência e caução de R$ 300.' : '', ativo: i !== 5, criado_em: iso(agora - (200 - i * 20) * 24 * H)
+  }));
+  const C = n => condos.find(c => c.nome.startsWith(n));
+  const ev = [];
+  const add = (o) => { const e = Object.assign({ id: uid(), notas: [], historico: [], prioridade: 'normal', responsavel: null }, o); ev.push(e); return e; };
+  add({ status: 'OPEN', resumo: '2ª via do boleto de outubro — Bloco A, ap 34. Pediu o envio por WhatsApp.', cliente: 'Maria Souza', telefone: '5517991112222', cond: C('Residencial Jardim'), tipo: 'boleto_2via', criado: agora - 2 * H });
+  add({ status: 'OPEN', resumo: 'Autorização de mudança (entrada) para sábado 18/10, das 8h às 12h — Torre 2, ap 101. Caminhão de 6 m.', cliente: 'João Lima', telefone: '5517988887777', cond: C('Edifício Solar'), tipo: 'autorizacao_mudanca', criado: agora - 26 * H });
+  add({ status: 'IN_PROGRESS', resumo: 'Nada consta para venda do imóvel — Bloco C, ap 12. A escritura está marcada para sexta.', cliente: 'Carla Mendes', telefone: '5517997001234', cond: C('Condomínio Vila'), tipo: 'cnd_nada_consta', criado: agora - 30 * H, prioridade: 'alta', responsavel: usuarios[1],
+        notas: [{ texto: 'Pedi a certidão ao financeiro. Previsão: amanhã às 10h.', autor: 'Ana Ribeiro', criado: agora - 20 * H }] });
+  add({ status: 'OPEN', resumo: 'Atualizar e-mail e telefone do proprietário da casa 27 (novo e-mail: roberto.alves@exemplo.com).', cliente: 'Roberto Alves', telefone: '5517992223344', cond: C('Residencial Ipê'), tipo: 'atualizacao_cadastral', criado: agora - 0.6 * H });
+  add({ status: 'OPEN', resumo: 'Síndica pede proposta de administração para um condomínio de 48 unidades no Jardim Seyon. Quer visita na próxima semana.', cliente: 'Patrícia Gomes', telefone: '5517981234567', cond: null, tipo: 'orcamento_proposta', criado: agora - 5 * H, prioridade: 'urgente' });
+  add({ status: 'IN_PROGRESS', resumo: 'Consulta de débitos — Bloco B, ap 22. Quer saber se é possível parcelar três taxas atrasadas.', cliente: 'Fernando Dias', telefone: '5517993335566', cond: C('Edifício Solar'), tipo: 'consulta_debitos', criado: agora - 6 * H, responsavel: usuarios[2] });
+  add({ status: 'OPEN', resumo: 'Transferência de titularidade após compra — ap 803. Documentação já enviada por e-mail.', cliente: 'Juliana Prado', telefone: '5517994446677', cond: C('Edifício Boulevard'), tipo: 'mudanca_titularidade', criado: agora - 3 * H });
+  add({ status: 'OPEN', resumo: 'Reclamação de barulho de obra depois das 18h no ap 502.', cliente: 'Marcos Teixeira', telefone: '5517995557788', cond: C('Edifício Boulevard'), tipo: 'outros', criado: agora - 1.2 * H });
+  const nomes = ['Bruna Cardoso', 'Diego Martins', 'Elaine Rocha', 'Gustavo Pires', 'Heloísa Batista', 'Igor Santana', 'Larissa Melo', 'Otávio Reis', 'Renata Castro', 'Vinícius Barros'];
+  const assuntos = {
+    boleto_2via: 'Segunda via do boleto do mês, enviada por e-mail.', autorizacao_mudanca: 'Autorização de mudança de saída no fim de semana.',
+    atualizacao_cadastral: 'Inclusão de novo morador no cadastro.', cnd_nada_consta: 'Declaração de nada consta para financiamento.',
+    consulta_debitos: 'Conferência de pagamento em duplicidade.', orcamento_proposta: 'Pedido de proposta para condomínio de 24 casas.',
+    mudanca_titularidade: 'Troca de titularidade por inventário.', outros: 'Dúvida sobre o uso do salão de festas.'
+  };
+  const pesos = ['boleto_2via', 'boleto_2via', 'boleto_2via', 'boleto_2via', 'autorizacao_mudanca', 'autorizacao_mudanca', 'consulta_debitos', 'consulta_debitos', 'atualizacao_cadastral', 'cnd_nada_consta', 'mudanca_titularidade', 'orcamento_proposta', 'outros', 'outros'];
+  for (let i = 0; i < 74; i++) {
+    const dias = Math.floor(rnd() * 88) + 1, tipo = pesos[Math.floor(rnd() * pesos.length)];
+    const criado = agora - dias * 24 * H - rnd() * 8 * H;
+    const cancel = rnd() < 0.08;
+    const tel = '55179' + String(80000000 + Math.floor(rnd() * 19999999));
+    add({ status: cancel ? 'CANCELED' : 'COMPLETED', resumo: assuntos[tipo], cliente: nomes[i % nomes.length], telefone: tel,
+          cond: rnd() < 0.08 ? null : condos[Math.floor(rnd() * 5)], tipo, criado, concluido: criado + (1 + rnd() * 30) * H,
+          responsavel: usuarios[1 + (i % 2)] });
+  }
+  ev.forEach(e => {
+    e.criado_em = iso(e.criado); e.concluido_em = e.concluido ? iso(e.concluido) : null; e.atualizado_em = e.concluido_em || e.criado_em;
+    e.notas = e.notas.map((n, k) => ({ id: k + 1, texto: n.texto, autor: n.autor, criado_em: iso(n.criado) }));
+    if (e.responsavel && e.status === 'IN_PROGRESS') e.historico.push({ acao: 'status', detalhe: 'OPEN → IN_PROGRESS', autor: e.responsavel.nome, criado_em: iso(e.criado + 0.5 * H) });
+  });
+  const pausas = [
+    { telefone: '5517993335566', pausado_ate: iso(agora + 19 * H), criado_em: iso(agora - 5 * H), motivo: 'atendimento_humano', por: null },
+    { telefone: '5517981230099', pausado_ate: iso(agora + 2 * H), criado_em: iso(agora - 22 * H), motivo: 'pausado_pelo_painel', por: 'Ana Ribeiro' }
+  ];
+  const cfg = {
+    bot_ativo: true, expediente: { dias: [1, 2, 3, 4, 5], inicio: '09:00', fim: '17:00', fuso: 'America/Sao_Paulo' },
+    feriados: ['2026-11-02', '2026-11-15', '2026-11-20', '2026-12-25'],
+    mensagem_fora_horario: 'Olá! Nosso horário de atendimento é de segunda à sexta-feira das 09h às 17h. Recebemos sua solicitação, um atendente do nosso time responderá assim que o expediente recomeçar.',
+    aviso_intervalo_horas: 4, mensagem_midia: 'Por enquanto eu consigo entender apenas mensagens de texto. Pode me escrever, por favor?',
+    pausa_humano_horas: 24, sla_horas: 8, numeros_gestor: ['5517991230000']
+  };
+  const me = usuarios[0];
+  const pausado = tel => pausas.some(p => p.telefone === tel && new Date(p.pausado_ate) > Date.now());
+  const linha = e => ({
+    id: e.id, status: e.status, resumo: e.resumo, telefone: e.telefone, cliente: e.cliente, condominio: e.cond?.nome || null, condominio_id: e.cond?.id || null,
+    tipo: e.tipo, criado_em: e.criado_em, atualizado_em: e.atualizado_em, concluido_em: e.concluido_em, prioridade: e.prioridade,
+    responsavel: e.responsavel ? { id: e.responsavel.id, nome: e.responsavel.nome } : null,
+    atrasada: (e.status === 'OPEN' || e.status === 'IN_PROGRESS') && Date.now() - new Date(e.criado_em) > cfg.sla_horas * H,
+    total_notas: e.notas.length, bot_pausado: pausado(e.telefone)
+  });
+  const detalhe = e => Object.assign(linha(e), {
+    notas: e.notas, historico: e.historico,
+    outras: ev.filter(o => o.cliente === e.cliente && o.telefone === e.telefone && o.id !== e.id).slice(0, 5).map(o => ({ id: o.id, status: o.status, resumo: o.resumo, criado_em: o.criado_em }))
+  });
+  function aberto() {
+    const p = Object.fromEntries(new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', weekday: 'short', hourCycle: 'h23' })
+      .formatToParts(new Date()).map(x => [x.type, x.value]));
+    const dia = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].indexOf(p.weekday) + 1;
+    const hm = `${p.hour}:${p.minute}`;
+    if (cfg.feriados.includes(`${p.year}-${p.month}-${p.day}`)) return false;
+    return cfg.expediente.dias.includes(dia) && hm >= cfg.expediente.inicio && hm < cfg.expediente.fim;
+  }
+  const erro = msg => Promise.reject(new Error(msg));
+  const diaSP = d => new Intl.DateTimeFormat('en-CA', { timeZone: TZ }).format(new Date(d));
+  async function api(acao, d) {
+    await new Promise(r => setTimeout(r, 120));
+    const find = () => ev.find(e => e.id === d.id);
+    switch (acao) {
+      case 'login': case 'eu': return { token: 'demo', usuario: me };
+      case 'logout': case 'senha_alterar': return {};
+      case 'usuarios_resumo': return { itens: usuarios.filter(u => u.ativo).map(u => ({ id: u.id, nome: u.nome })) };
+      case 'usuarios_listar': return { itens: usuarios };
+      case 'usuario_salvar': {
+        if (!d.nome?.trim() || !/^[^@\s]+@[^@\s]+$/.test(d.email || '')) return erro('Informe nome e um e-mail válido.');
+        if (d.senha && d.senha.length < 8) return erro('A senha precisa ter pelo menos 8 caracteres.');
+        if (!d.id) { if (!d.senha) return erro('Defina uma senha inicial.'); usuarios.push({ id: uid(), nome: d.nome.trim(), email: d.email.trim().toLowerCase(), papel: d.papel, ativo: true, ultimo_acesso: null }); }
+        else { const u = usuarios.find(x => x.id === d.id); if (u.id === me.id && (d.papel !== 'admin' || !d.ativo)) return erro('Você não pode remover seu próprio acesso de administrador.'); Object.assign(u, { nome: d.nome.trim(), email: d.email.trim().toLowerCase(), papel: d.papel, ativo: d.ativo }); }
+        return {};
+      }
+      case 'solicitacoes_listar':
+        return { itens: ev.filter(e => e.status === 'OPEN' || e.status === 'IN_PROGRESS' || Date.now() - new Date(e.concluido_em || e.atualizado_em) < 30 * 24 * H).map(linha) };
+      case 'solicitacao_detalhe': { const e = find(); return e ? detalhe(e) : erro('Solicitação não encontrada.'); }
+      case 'solicitacao_atualizar': {
+        const e = find(); if (!e) return erro('Solicitação não encontrada.');
+        const t = new Date().toISOString();
+        if ('status' in d && d.status !== e.status) {
+          e.historico.push({ acao: 'status', detalhe: `${e.status} → ${d.status}`, autor: me.nome, criado_em: t });
+          e.status = d.status; e.concluido_em = ['COMPLETED', 'CANCELED'].includes(d.status) ? t : null;
+          if (d.status === 'IN_PROGRESS' && !e.responsavel) e.responsavel = me;
+        }
+        if ('responsavel_id' in d) { e.responsavel = usuarios.find(u => u.id === d.responsavel_id) || null; e.historico.push({ acao: 'responsavel', detalhe: e.responsavel?.nome || 'Sem responsável', autor: me.nome, criado_em: t }); }
+        if ('prioridade' in d) { e.prioridade = d.prioridade; e.historico.push({ acao: 'prioridade', detalhe: d.prioridade, autor: me.nome, criado_em: t }); }
+        e.atualizado_em = t;
+        return detalhe(e);
+      }
+      case 'nota_adicionar': {
+        const e = find(); if (!d.texto?.trim()) return erro('Escreva a anotação.');
+        e.notas.push({ id: e.notas.length + 1, texto: d.texto.trim(), autor: me.nome, criado_em: new Date().toISOString() }); return detalhe(e);
+      }
+      case 'condominios_listar':
+        return { itens: [...condos].sort((a, b) => (b.ativo - a.ativo) || a.nome.localeCompare(b.nome, 'pt-BR')).map(c => Object.assign({}, c, {
+          abertas: ev.filter(e => e.cond?.id === c.id && (e.status === 'OPEN' || e.status === 'IN_PROGRESS')).length,
+          total: ev.filter(e => e.cond?.id === c.id).length })) };
+      case 'condominio_salvar': {
+        const nome = (d.nome || '').trim(); if (!nome) return erro('Informe o nome do condomínio.');
+        if (condos.some(c => c.nome.toLowerCase() === nome.toLowerCase() && c.id !== d.id)) return erro('Já existe um condomínio com esse nome.');
+        const dados = { nome, endereco: d.endereco?.trim() || '', cidade: d.cidade?.trim() || '', cnpj: d.cnpj?.trim() || '', sindico_nome: d.sindico_nome?.trim() || '', sindico_telefone: (d.sindico_telefone || '').replace(/\D/g, ''), observacoes: d.observacoes?.trim() || '', ativo: d.ativo };
+        if (d.id) Object.assign(condos.find(c => c.id === d.id), dados); else condos.push(Object.assign({ id: uid(), criado_em: new Date().toISOString() }, dados));
+        return {};
+      }
+      case 'pausas_listar':
+        return { itens: pausas.filter(p => new Date(p.pausado_ate) > Date.now()).map(p => {
+          const e = ev.filter(x => x.telefone === p.telefone).sort((a, b) => new Date(b.criado_em) - new Date(a.criado_em))[0];
+          return { telefone: p.telefone, pausado_ate: p.pausado_ate, desde: p.criado_em, motivo: p.motivo, por: p.por, cliente: e?.cliente || null, ultima_solicitacao: e?.resumo || null };
+        }) };
+      case 'pausa_retomar': { const i = pausas.findIndex(p => p.telefone === d.telefone); if (i >= 0) pausas.splice(i, 1); return {}; }
+      case 'pausa_criar': {
+        const tel = String(d.telefone || '').replace(/\D/g, ''); const i = pausas.findIndex(p => p.telefone === tel); if (i >= 0) pausas.splice(i, 1);
+        pausas.unshift({ telefone: tel, pausado_ate: iso(Date.now() + (d.horas || cfg.pausa_humano_horas) * H), criado_em: new Date().toISOString(), motivo: 'pausado_pelo_painel', por: me.nome });
+        return { ok: true };
+      }
+      case 'config_obter': return Object.assign(JSON.parse(JSON.stringify(cfg)), { expediente_aberto_agora: aberto() });
+      case 'config_salvar':
+        if (d.expediente && d.expediente.inicio >= d.expediente.fim) return erro('O horário de início precisa ser antes do horário de término.');
+        Object.assign(cfg, d); return Object.assign(JSON.parse(JSON.stringify(cfg)), { expediente_aberto_agora: aberto() });
+      case 'resumo': {
+        const dias = d.dias || 30, hojeS = diaSP(Date.now());
+        const ini = new Date(Date.now() - (dias - 1) * 24 * H);
+        const per = ev.filter(e => diaSP(e.criado_em) >= diaSP(ini));
+        const conc = ev.filter(e => e.status === 'COMPLETED' && Date.now() - new Date(e.concluido_em) < dias * 24 * H);
+        const ativos = ev.filter(e => e.status === 'OPEN' || e.status === 'IN_PROGRESS');
+        const por_dia = []; for (let i = dias - 1; i >= 0; i--) { const k = diaSP(Date.now() - i * 24 * H); por_dia.push({ dia: k, total: per.filter(e => diaSP(e.criado_em) === k).length }); }
+        const agrupa = (arr, f) => Object.entries(arr.reduce((m, e) => (m[f(e)] = (m[f(e)] || 0) + 1, m), {})).sort((a, b) => b[1] - a[1]);
+        return {
+          dias, abertas: ev.filter(e => e.status === 'OPEN').length, em_andamento: ev.filter(e => e.status === 'IN_PROGRESS').length,
+          atrasadas: ativos.filter(e => linha(e).atrasada).length, sem_responsavel: ativos.filter(e => !e.responsavel).length,
+          novas_hoje: ev.filter(e => diaSP(e.criado_em) === hojeS).length, recebidas_periodo: per.length, concluidas_periodo: conc.length,
+          tempo_medio_horas: conc.length ? Math.round(conc.reduce((s, e) => s + (new Date(e.concluido_em) - new Date(e.criado_em)), 0) / conc.length / H * 10) / 10 : null,
+          sla_horas: cfg.sla_horas, por_dia,
+          por_tipo: agrupa(per, e => e.tipo).map(([tipo, total]) => ({ tipo, total })),
+          por_condominio: agrupa(per, e => e.cond?.nome || 'Não identificado').slice(0, 8).map(([condominio, total]) => ({ condominio, total })),
+          mensagens_recebidas: per.length * 7 + 23, atendimentos_bot: per.length + 9, expediente_aberto: aberto(), bot_ativo: cfg.bot_ativo,
+          pausas_ativas: pausas.filter(p => new Date(p.pausado_ate) > Date.now()).length
+        };
+      }
+      default: return erro('Ação desconhecida: ' + acao);
+    }
+  }
+  return { api };
+})();
+
+/* ---------------------------------------------------------------- início */
+(async function iniciar() {
+  if (S.token && S.apiUrl) {
+    try { const r = await api('eu'); S.user = r.usuario; iniciarApp(); return; }
+    catch (e) { /* sessão inválida: segue para o login */ }
+  }
+  if (INICIAR_EM_DEMO) { $('#demo-btn').click(); return; }
+  mostrarLogin('');
+})();
+</script>
+
+</body>
+</html>
